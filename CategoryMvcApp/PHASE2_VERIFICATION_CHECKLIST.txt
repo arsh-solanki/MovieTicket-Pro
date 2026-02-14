@@ -1,0 +1,317 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                         PHASE 2 VERIFICATION CHECKLIST                          ║
+║                                                                                    ║
+║     Before running migrations, verify all components are in place ✓             ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+───────────────────────────────────────────────────────────────────────────────────
+  MODELS (Phase 1 – Updated for Phase 2)
+───────────────────────────────────────────────────────────────────────────────────
+
+□ ApplicationUser.cs
+  ✓ Extends IdentityUser
+  ✓ FirstName, LastName properties
+  ✓ PhoneNumber override property
+  ✓ IsActive bool (default true)
+  ✓ CreatedAt, UpdatedAt DateTime fields
+  ✓ Bookings 1:N navigation property
+
+□ Movie.cs
+  ✓ Id (PK), Title (required), Description, DurationMinutes, ReleaseDate
+  ✓ PosterUrl, TrailerUrl (URL validation)
+  ✓ IsActive, CreatedAt, UpdatedAt
+  ✓ Shows 1:N navigation property
+
+□ Theatre.cs
+  ✓ Id (PK), Name, City (required), Address
+  ✓ IsActive, CreatedAt, UpdatedAt
+  ✓ Screens 1:N navigation property
+
+□ Screen.cs
+  ✓ Id (PK), TheatreId (FK), Name, TotalSeats
+  ✓ LayoutJson for seat configuration
+  ✓ IsActive, CreatedAt, UpdatedAt
+  ✓ Theatre N:1 navigation, Shows 1:N navigation
+
+□ Show.cs
+  ✓ Id (PK), MovieId (FK), ScreenId (FK)
+  ✓ StartDateTime, EndDateTime, IsActive, CreatedAt, UpdatedAt
+  ✓ Movie, Screen, SeatPrices, Bookings, BookedSeats navigations
+
+□ SeatPrice.cs
+  ✓ Id (PK), ShowId (FK), Category, Price (decimal)
+  ✓ CreatedAt, UpdatedAt
+  ✓ Show N:1 navigation
+
+□ Booking.cs
+  ✓ Id (PK), UserId (FK), ShowId (FK)
+  ✓ BookingDateTime, TotalAmount (decimal)
+  ✓ Status = BookingStatus enum (NOT string!)
+  ✓ IsActive, Notes, CreatedAt, UpdatedAt
+  ✓ User, Show, BookedSeats navigations
+
+□ BookedSeat.cs
+  ✓ Id (PK), BookingId (FK), ShowId (FK) with [Required] & [ForeignKey]
+  ✓ SeatNumber (string, required, regex validation)
+  ✓ Category, Price (decimal)
+  ✓ IsActive, CreatedAt, UpdatedAt
+  ✓ Booking, Show navigations
+
+□ BookingStatus.cs (NEW)
+  ✓ Enum with: Pending, Confirmed, Refunded, Cancelled
+  ✓ Stored as int (0, 1, 2, 3) in database
+
+───────────────────────────────────────────────────────────────────────────────────
+  DBCONTEXT (Data/ApplicationDbContext.cs)
+───────────────────────────────────────────────────────────────────────────────────
+
+□ Class Declaration
+  ✓ Inherits IdentityDbContext<ApplicationUser>
+  ✓ Constructor accepts DbContextOptions<ApplicationDbContext>
+  ✓ Calls base(options)
+
+□ DbSet Properties
+  ✓ Movies
+  ✓ Theatres
+  ✓ Screens
+  ✓ Shows
+  ✓ SeatPrices
+  ✓ Bookings
+  ✓ BookedSeats
+
+□ OnModelCreating Method
+  ✓ Calls base.OnModelCreating(builder)
+  ✓ Configurations for all 7 entities
+  ✓ Calls SeedRolesAndAdminUser(builder)
+
+□ Movie Configuration
+  ✓ HasKey(e => e.Id)
+  ✓ Title: Required, MaxLength(200)
+  ✓ IsActive: DefaultValue(true)
+  ✓ CreatedAt: HasDefaultValueSql("GETUTCDATE()")
+  ✓ Relationship: 1 → N Shows with cascade delete
+  ✓ Index on IsActive, Title
+
+□ Theatre Configuration
+  ✓ HasKey(e => e.Id)
+  ✓ Name, City: Required, MaxLength
+  ✓ IsActive, CreatedAt defaults
+  ✓ Relationship: 1 → N Screens with cascade delete
+  ✓ UNIQUE Index on (Name, City)
+  ✓ Index on IsActive
+
+□ Screen Configuration
+  ✓ HasKey(e => e.Id)
+  ✓ Name: Required, MaxLength(100)
+  ✓ TotalSeats: Required
+  ✓ LayoutJson: HasColumnType("nvarchar(max)")
+  ✓ IsActive, CreatedAt defaults
+  ✓ Foreign key to Theatre with cascade delete
+  ✓ Relationship: 1 → N Shows with cascade delete
+  ✓ UNIQUE Index on (TheatreId, Name)
+
+□ Show Configuration
+  ✓ HasKey(e => e.Id)
+  ✓ MovieId, ScreenId: Required
+  ✓ StartDateTime, EndDateTime: Required
+  ✓ IsActive, CreatedAt defaults
+  ✓ Foreign keys to Movie, Screen with cascade delete
+  ✓ Relationships to SeatPrices, Bookings, BookedSeats with cascade delete
+  ✓ Index on (MovieId, ScreenId, StartDateTime)
+
+□ SeatPrice Configuration
+  ✓ HasKey(e => e.Id)
+  ✓ ShowId, Category: Required
+  ✓ Price: HasColumnType("decimal(10, 2)")
+  ✓ CreatedAt default
+  ✓ Foreign key to Show with cascade delete
+  ✓ UNIQUE Index on (ShowId, Category)
+
+□ Booking Configuration
+  ✓ HasKey(e => e.Id)
+  ✓ UserId, ShowId: Required
+  ✓ BookingDateTime, TotalAmount: Required
+  ✓ Status: HasConversion<int>(), DefaultValue(BookingStatus.Pending)
+  ✓ IsActive, CreatedAt defaults
+  ✓ Foreign keys to User, Show with cascade delete
+  ✓ Relationship to BookedSeats with cascade delete
+  ✓ Index on (UserId, ShowId), Status, IsActive
+
+□ BookedSeat Configuration ⭐ CRITICAL
+  ✓ HasKey(e => e.Id)
+  ✓ BookingId, ShowId: Required
+  ✓ SeatNumber, Category: Required
+  ✓ Price: HasColumnType("decimal(10, 2)")
+  ✓ IsActive, CreatedAt defaults
+  ✓ Foreign keys to Booking, Show with cascade delete
+  ✓ ✓✓✓ UNIQUE Index on (ShowId, SeatNumber) with name "UX_BookedSeat_ShowId_SeatNumber"
+  ✓ Index on BookingId, IsActive
+
+□ Seed Data Method
+  ✓ Creates "Admin" role (Id: "admin-role-id")
+  ✓ Creates "User" role (Id: "user-role-id")
+  ✓ Adds both roles via HasData()
+  ✓ Creates admin user with:
+    - UserName: admin@movie.com
+    - Email: admin@movie.com
+    - FirstName: Admin
+    - LastName: User
+    - IsActive: true
+    - Password hash (using PasswordHasher)
+  ✓ Adds admin user via HasData()
+  ✓ Assigns Admin role to admin user via IdentityUserRole HasData()
+
+───────────────────────────────────────────────────────────────────────────────────
+  PROGRAM.CS CONFIGURATION
+───────────────────────────────────────────────────────────────────────────────────
+
+□ Using Statements
+  ✓ using CategoryMvcApp.Data;
+  ✓ using CategoryMvcApp.Models;
+  ✓ using Microsoft.AspNetCore.Identity;
+  ✓ using Microsoft.EntityFrameworkCore;
+
+□ DbContext Registration
+  ✓ Reads "DefaultConnection" from configuration
+  ✓ Calls AddDbContext<ApplicationDbContext>()
+  ✓ Uses options.UseSqlServer(connectionString)
+
+□ Identity Configuration
+  ✓ Calls AddIdentity<ApplicationUser, IdentityRole>()
+  ✓ Password policy:
+    - RequiredLength: 6
+    - RequireDigit: true
+    - RequireNonAlphanumeric: true
+    - RequireUppercase: true
+    - RequireLowercase: true
+  ✓ Lockout policy:
+    - DefaultLockoutTimeSpan: 5 minutes
+    - MaxFailedAccessAttempts: 5
+  ✓ Sign-in: RequireConfirmedEmail: false
+  ✓ Calls AddEntityFrameworkStores<ApplicationDbContext>()
+  ✓ Calls AddDefaultTokenProviders()
+
+□ Other Services
+  ✓ AddControllersWithViews()
+  ✓ AddRazorPages()
+
+□ Middleware Order (in app.Use* calls)
+  ✓ app.UseHttpsRedirection()
+  ✓ app.UseRouting()
+  ✓ app.UseAuthentication() ← BEFORE Authorization
+  ✓ app.UseAuthorization()
+  ✓ app.MapControllerRoute() with endpoint mapping
+
+───────────────────────────────────────────────────────────────────────────────────
+  APPSETTINGS.JSON
+───────────────────────────────────────────────────────────────────────────────────
+
+□ ConnectionStrings Section
+  ✓ "DefaultConnection" key present
+  ✓ Value: "Server=(localdb)\\mssqllocaldb;Database=MovieTicketDb;Trusted_Connection=true;MultipleActiveResultSets=true;"
+
+□ Logging Section
+  ✓ LogLevel.Default: "Information"
+  ✓ LogLevel.Microsoft.AspNetCore: "Warning"
+  ✓ (Optional) LogLevel.Microsoft.EntityFrameworkCore.Database.Command: "Information"
+
+□ AllowedHosts
+  ✓ "*"
+
+───────────────────────────────────────────────────────────────────────────────────
+  NUG PACKAGES
+───────────────────────────────────────────────────────────────────────────────────
+
+Run: dotnet list package
+
+Expected (minimum versions for .NET 8):
+  ✓ Microsoft.EntityFrameworkCore.SqlServer (8.0.x or 9.0.x)
+  ✓ Microsoft.EntityFrameworkCore.Tools (8.0.x or 9.0.x)
+  ✓ Microsoft.EntityFrameworkCore.Design (8.0.x or 9.0.x)
+  ✓ Microsoft.AspNetCore.Identity.EntityFrameworkCore (8.0.x or 9.0.x)
+  ✓ Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore (8.0.x or 9.0.x)
+
+───────────────────────────────────────────────────────────────────────────────────
+  BUILD & VERIFICATION
+───────────────────────────────────────────────────────────────────────────────────
+
+□ Build Project
+  $ dotnet build
+  ✓ No compilation errors
+  ✓ No warnings (if possible)
+
+□ Restore NuGet Packages
+  $ dotnet restore
+  ✓ All packages restored
+
+□ Ready for Migration
+  $ dotnet ef migrations add InitialCreate
+  ✓ Migration file created in Migrations/ folder
+  ✓ Check generated SQL script
+
+  $ dotnet ef database update
+  ✓ Database created in (localdb)\mssqllocaldb\MovieTicketDb
+  ✓ All tables created
+  ✓ Seed data inserted
+
+───────────────────────────────────────────────────────────────────────────────────
+  DATABASE VERIFICATION (AFTER MIGRATION)
+───────────────────────────────────────────────────────────────────────────────────
+
+Open SQL Server Management Studio or SQL Server Object Explorer and verify:
+
+□ Database
+  ✓ Database name: MovieTicketDb
+  ✓ Location: (localdb)\mssqllocaldb
+
+□ Tables (15 total)
+  Identity Tables:
+    ✓ AspNetUsers (seeded with admin@movie.com)
+    ✓ AspNetRoles (seeded with Admin, User)
+    ✓ AspNetUserRoles (admin user assigned Admin role)
+    ✓ AspNetUserClaims
+    ✓ AspNetRoleClaims
+    ✓ AspNetUserLogins
+    ✓ AspNetUserTokens
+
+  Custom Tables:
+    ✓ Movies
+    ✓ Theatres
+    ✓ Screens
+    ✓ Shows
+    ✓ SeatPrices
+    ✓ Bookings
+    ✓ BookedSeats
+
+□ Indexes
+  ✓ UX_BookedSeat_ShowId_SeatNumber (UNIQUE on BookedSeats)
+  ✓ Indexes on (ShowId, Category) in SeatPrices
+  ✓ Indexes on (TheatreId, Name) in Screens
+  ✓ Indexes on (Name, City) in Theatres
+
+□ Seeded Data
+  ✓ AspNetRoles: Admin, User
+  ✓ AspNetUsers: admin@movie.com with seeded password
+  ✓ AspNetUserRoles: admin user in Admin role
+
+───────────────────────────────────────────────────────────────────────────────────
+  FINAL CHECKLIST
+───────────────────────────────────────────────────────────────────────────────────
+
+□ All 8 models created/updated with correct properties
+□ BookingStatus enum created
+□ ApplicationDbContext created with:
+  - 7 DbSet properties
+  - Fluent API configurations for all entities
+  - Unique indexes on: BookedSeat(ShowId, SeatNumber), SeatPrice(ShowId, Category), Screen(TheatreId, Name), Theatre(Name, City)
+  - Seed data: Admin role, User role, admin@movie.com user
+□ Program.cs updated with DbContext registration, Identity configuration, middleware order
+□ appsettings.json updated with ConnectionString and logging config
+□ All NuGet packages installed
+□ Project builds without errors
+□ Migration created and applied successfully
+□ Database created with all tables, indexes, and seed data
+
+═══════════════════════════════════════════════════════════════════════════════════
+
+✓ PHASE 2 IS COMPLETE AND READY FOR PHASE 3

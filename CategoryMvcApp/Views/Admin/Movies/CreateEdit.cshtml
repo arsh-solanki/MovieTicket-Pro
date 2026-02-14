@@ -1,0 +1,67 @@
+@model CategoryMvcApp.Models.Movie
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var isEdit = Model != null && Model.Id > 0;
+}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-md-8 offset-md-2">
+            <h2><i class="bi me-2"></i>@(isEdit ? "Edit Movie" : "Create New Movie")</h2>
+            
+            <div class="card shadow-sm mt-3">
+                <div class="card-body">
+                    <form method="post" class="mt-3">
+                        <div class="mb-3">
+                            <label class="form-label">Title <span class="text-danger">*</span></label>
+                            <input asp-for="Title" class="form-control" placeholder="e.g., Inception" />
+                            <span asp-validation-for="Title" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea asp-for="Description" class="form-control" rows="4" placeholder="Movie description..."></textarea>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Genre</label>
+                                <input asp-for="Genre" class="form-control" placeholder="e.g., Sci-Fi/Thriller" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Language</label>
+                                <input asp-for="Language" class="form-control" placeholder="e.g., English" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Duration (minutes) <span class="text-danger">*</span></label>
+                                <input asp-for="DurationMinutes" class="form-control" type="number" placeholder="148" />
+                                <span asp-validation-for="DurationMinutes" class="text-danger"></span>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Release Date</label>
+                                <input asp-for="ReleaseDate" class="form-control" type="date" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Poster URL</label>
+                            <input asp-for="PosterUrl" class="form-control" placeholder="https://example.com/poster.jpg" />
+                        </div>
+
+                        <div class="mb-3 form-check">
+                            <input asp-for="IsActive" class="form-check-input" />
+                            <label class="form-check-label">Active</label>
+                        </div>
+
+                        <div class="mt-4 d-flex gap-2">
+                            <button type="submit" class="btn btn-success"><i class="bi bi-check-circle me-2"></i>@(isEdit ? "Save Changes" : "Create Movie")</button>
+                            <a href="/Admin/Movies" class="btn btn-secondary"><i class="bi bi-x-circle me-2"></i>Cancel</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

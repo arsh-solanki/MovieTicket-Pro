@@ -1,0 +1,753 @@
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+  PHASE 6 – UI POLISH & SAMPLE DATA SEEDING
+  COMPREHENSIVE TESTING GUIDE & CHECKLIST
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+📋 TABLE OF CONTENTS:
+  1. Pre-Testing Setup
+  2. Visual & UI Testing Checklist
+  3. Dark Mode Testing
+  4. Sample Data Verification
+  5. End-to-End Workflow Tests
+  6. Performance & Browser Compatibility
+  7. Responsive Design Testing
+  8. Database Verification
+  9. Troubleshooting Guide
+  10. Final Deployment Checklist
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 1. PRE-TESTING SETUP
+
+### 1.1 Build & Compile
+Command: $ dotnet build --configuration Release
+
+Expected Result:
+  ✓ Build succeeds with no errors
+  ✓ All NuGet packages resolved
+  ✓ Output: "Build succeeded"
+
+### 1.2 Database Migration & Seeding
+Commands:
+  $ dotnet ef migrations list
+  $ dotnet ef database update
+  $ dotnet run
+
+Expected Result:
+  ✓ Database migrations applied successfully
+  ✓ SampleDataSeeding runs automatically:
+    ✓ Created role: Admin
+    ✓ Created role: User
+    ✓ Created admin user: admin@movieticket.com
+    ✓ Created 4 sample customer users
+    ✓ Created 5 movies
+    ✓ Created 2 theatres with 4 screens total
+    ✓ Created seat prices for all screens
+    ✓ Created shows for next 7 days
+  ✓ Application starts without errors
+  ✓ No database migration conflicts
+
+### 1.3 Verify Application Is Running
+  ✓ Application accessible at: https://localhost:7001 (or assigned port)
+  ✓ No SSL certificate errors (or accept self-signed for testing)
+  ✓ Home page loads without 500 errors
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 2. VISUAL & UI TESTING CHECKLIST
+
+### 2.1 Typography & Font Loading ⚡
+Test Location: All pages (Home, Movies, Details, SelectSeats, Confirmation)
+
+Checks:
+  ☐ Google Fonts loaded successfully (Poppins + Montserrat)
+  ☐ Headings use 'Montserrat' font (bold, sans-serif)
+  ☐ Body text uses 'Poppins' font (clean, readable)
+  ☐ Font sizes scaled correctly:
+    ☐ H1: 32px+
+    ☐ H2: 28px
+    ☐ H3: 24px
+    ☐ Body: 14-16px
+  ☐ Font weights applied: 300, 400, 500, 600, 700, 800
+  ☐ Font rendering smooth (no jagged edges)
+  ☐ Print preview shows fonts correctly
+
+Debugging (if fonts don't load):
+  $ Open DevTools (F12) → Console
+  $ Look for failed CSS resource loads
+  $ Check: Network tab → CSS files
+  $ Verify: <link href="fonts.googleapis.com/..."> in _Layout.cshtml
+
+### 2.2 Navbar Premium Styling
+Test Location: All pages (header always visible)
+
+Checks:
+  ☐ Navbar gradient background: Dark gradient (1a1a1a → 2d2d2d)
+  ☐ Brand "🎬 MovieTicket Pro" displays with:
+    ☐ Correct emoji
+    ☐ Gradient text effect (pink-red)
+    ☐ Montserrat font
+    ☐ 24px font size
+  ☐ Navigation links visible & clickable:
+    ☐ Home with icon
+    ☐ Movies with icon
+    ☐ Privacy with icon
+  ☐ Dark Mode Toggle Button:
+    ☐ Located top-right of navbar
+    ☐ Shows "Dark" with moon icon initially
+    ☐ Clicking toggles to "Light" with sun icon
+    ☐ Smooth transition (no flashing)
+  ☐ User Dropdown (when logged in):
+    ☐ Shows username
+    ☐ Dropdown menu appears on click
+    ☐ Profile, Admin Dashboard (if admin), Logout options
+  ☐ Auth Links (when not logged in):
+    ☐ Login link visible
+    ☐ Register link visible
+  ☐ Mobile Hamburger Menu:
+    ☐ Appears on screens < 992px
+    ☐ Click toggles menu open/close
+    ☐ All links work from mobile menu
+
+### 2.3 Home Page Carousel 🎬
+Test Location: https://localhost:7001/Home/Index
+
+Checks:
+  ☐ Hero carousel displays full-width
+  ☐ Carousel height: 500px (desktop), 300px (mobile)
+  ☐ 4 featured movies displayed (first 4 from database)
+  ☐ Each slide shows:
+    ☐ Movie poster as background image
+    ☐ Dark overlay gradient (0% top → 80% bottom)
+    ☐ Movie title (bold, large)
+    ☐ Movie description (truncated 100 chars)
+    ☐ "Book Now" button with arrow icon
+  ☐ Carousel auto-advances every 5 seconds
+  ☐ Navigation dots at bottom-right:
+    ☐ 4 dots corresponding to 4 slides
+    ☐ Active dot is larger/brighter (white, scale 1.3)
+    ☐ Clicking dots jumps to that slide
+  ☐ Smooth fade transition between slides
+  ☐ "Book Now" button gradient:
+    ☐ Background: #ff416c → #ff4b2b (pink to red)
+    ☐ Hover effect: raises up, increases shadow
+  ☐ Responsive on mobile:
+    ☐ Carousel still visible
+    ☐ Text readable (font size adjusts)
+    ☐ Dots still clickable
+
+### 2.4 Movie Cards Section
+Test Location: Home/Index below carousel
+
+Checks:
+  ☐ Section title: "🎬 Now Showing" (Montserrat, 32px, bold)
+  ☐ Subtitle: "Explore the latest blockbusters..."
+  ☐ Cards display in responsive grid:
+    ☐ 4 columns (desktop > 1200px)
+    ☐ 2 columns (tablet 768-1024px)
+    ☐ 1 column (mobile < 768px)
+  ☐ Each movie card includes:
+    ☐ Poster image (350px height)
+    ☐ "Now Playing" badge (pink gradient, top-right)
+    ☐ Rating overlay (appears on hover): "⭐ 8.5/10"
+    ☐ Movie title (bold)
+    ☐ Release date with icon
+    ☐ Description text
+    ☐ "View & Book" button (pink gradient)
+  ☐ Card hover effect:
+    ☐ Card rises up (translateY -10px)
+    ☐ Shadow increases (0 20px 40px)
+    ☐ Poster image zooms (scale 1.05)
+  ☐ Card shadows: subtle drop shadow in light mode
+  ☐ All 5 movies display (from SampleDataSeeding)
+
+### 2.5 Movie Details Page
+Test Location: Click "View & Book" on any movie card
+
+Checks:
+  ☐ Movie poster on left (clear, readable)
+  ☐ Movie title, duration, release date, genre visible
+  ☐ Description displays fully (not truncated)
+  ☐ Showtimes grid displays:
+    ☐ Card for each show
+    ☐ Theatre name, screen, date/time
+    ☐ Price range badge
+    ☐ "Book Tickets" button per show
+  ☐ Shows filtered correctly:
+    ☐ Only future shows (StartDateTime > now)
+    ☐ Sorted by date/time ascending
+  ☐ Shows responsive layout (2 columns → 1 column on mobile)
+
+### 2.6 Seat Selection (SelectSeats) Page ⭐ CRITICAL
+Test Location: Click "Book Tickets" on any show time
+
+Checks:
+  ☐ Page layout: Header + Seat Grid (left) + Sidebar (right)
+  ☐ Screen Visual Indicator:
+    ☐ "🎬 SCREEN" text
+    ☐ Red gradient background (#ff416c → #ff4b2b)
+    ☐ Centered, bold, all-caps
+    ☐ Responsive sizing
+  
+  ☐ SEAT GRID STYLING:
+    ☐ Each seat: 45×45px, rounded corners (8px)
+    ☐ Margin: 6px between seats
+    ☐ Rows: 10 (A-J)
+    ☐ Columns: 15 (1-15)
+    
+    ☐ Seat Colors:
+      ☐ Available: Green gradient (#28a745 → #1e7e34)
+      ☐ Selected: Blue gradient (#007bff → #0056b3), scale 1.1, pulse animation
+      ☐ Booked: Dark gray (#343a40), opacity 0.7, no hover effect
+    
+    ☐ Seat Animations:
+      ☐ Hover (available): scale 1.15, large shadow
+      ☐ Hover (selected): scale 1.2, bright shadow
+      ☐ Selected pulse: @keyframes pulse animation (10px shadow wave every 2s)
+      ☐ Row entrance: slideInUp animation (staggered delays)
+  
+  ☐ Seat Legend (below grid):
+    ☐ Shows: Available (green), Selected (blue), Booked (gray)
+    ☐ Each with small seat icon
+    ☐ Responsive layout (flex, wrap on mobile)
+  
+  ☐ SIDEBAR STICKY PANEL (right):
+    ☐ Sticky positioning (stays visible while scrolling)
+    ☐ Background: white (light mode), dark gray (dark mode)
+    ☐ Rounded corners: 12px
+    ☐ Shadow: 0 8px 24px
+    
+    ☐ Sidebar Sections:
+      1. Pricing Table:
+         ☐ Shows all seat categories (Premium, Gold, Silver)
+         ☐ Shows prices (₹500, ₹300, ₹150)
+         ☐ Cards have left border (blue gradient)
+         ☐ Hover effect: raises up, shadow increases
+      
+      2. Selected Seats Count:
+         ☐ Displays "# seats selected"
+         ☐ Large blue number
+         ☐ Updates in real-time as user selects
+      
+      3. Selected Seats List:
+         ☐ Shows tags for each selected seat (A1, B2, etc.)
+         ☐ Tags have light blue background (dark mode: darker)
+         ☐ Each tag has small × to remove
+         ☐ Hover × button enlarges
+      
+      4. Total Amount:
+         ☐ Large green text with gradient
+         ☐ Updates in real-time
+         ☐ Format: ₹XXXX.XX
+      
+      5. Reserve Button:
+         ☐ Red gradient background
+         ☐ Full width, 14px padding
+         ☐ Disabled (grayed out) until ≥1 seat selected
+         ☐ Hover (enabled): raises up, glow effect
+  
+  ☐ Responsive on Mobile:
+    ☐ Seat size: 35×35px (tablet), 30px (mobile)
+    ☐ Grid wraps to fit screen
+    ☐ Sidebar becomes non-sticky below 768px
+    ☐ Sidebar moves below seat grid
+    ☐ All interactions work on touch
+
+### 2.7 Confirmation Page
+Test Location: After successful booking
+
+Checks:
+  ☐ Success banner: "✅ Booking Confirmed!" (prominent)
+  ☐ Main card displays:
+    ☐ Movie poster
+    ☐ Title, theatre, screen, showtime
+    ☐ Booked seats grid (3 columns)
+    ☐ Each seat shows: number, category, price
+    ☐ Booking details (confirmation #, booking ID)
+  ☐ Sidebar displays:
+    ☐ Booking summary (number of seats, list)
+    ☐ Price breakdown by category
+    ☐ Total amount (green, large)
+    ☐ Buttons: "Book More", "View History"
+  ☐ Important Notes section at bottom
+  ☐ Print button:
+    ☐ Opens print preview
+    ☐ Print styles applied (no colors, simplified layout)
+  ☐ Back to Home button
+  ☐ Responsive layout (stacks on mobile)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 3. DARK MODE TESTING 🌙
+
+### 3.1 Toggle Functionality
+Test Location: All pages, dark mode toggle in navbar
+
+Steps:
+  1. Click dark mode toggle button (moon icon)
+  2. Observe: Page transitions to dark mode
+  3. Verify: html element has data-bs-theme="dark"
+  4. Click toggle again
+  5. Observe: Page transitions back to light mode
+  6. Verify: html element has data-bs-theme="light"
+
+Checks:
+  ☐ Smooth transition (no flashing)
+  ☐ Toggle button icon changes (moon ↔ sun)
+  ☐ Toggle button label changes ("Dark" ↔ "Light")
+  ☐ localStorage updated with theme preference
+  ☐ Theme persists after page reload
+  ☐ Theme persists across different pages
+
+### 3.2 Dark Mode Styling Verification
+
+Light Mode:
+  ☐ Background: Light gradient (#f5f7fa → #c3cfe2)
+  ☐ Text: Dark (#2c3e50)
+  ☐ Cards: White background, dark text
+  ☐ Navbar: White/light background
+  ☐ Seat grid: Light background with subtle shadow
+
+Dark Mode:
+  ☐ Background: Dark gradient (#1a1a1a → #2d2d2d)
+  ☐ Text: Light (#adb5bd)
+  ☐ Cards: Dark background (#343a40), light text
+  ☐ Navbar: Dark gradient maintained
+  ☐ Seat grid: Dark background
+  ☐ All text readable (good contrast)
+  ☐ Buttons maintain visibility
+
+### 3.3 Dark Mode on All Pages
+Test each page in both light & dark modes:
+
+  ☐ Home/Index:
+    ☐ Carousel displays correctly
+    ☐ Movie cards visible, readable
+    ☐ Colors properly adjusted
+  
+  ☐ Movies/Index:
+    ☐ Card styling matches dark mode
+    ☐ Text contrast adequate
+  
+  ☐ Movies/Details:
+    ☐ Poster displays clearly
+    ☐ Showtime cards visible
+  
+  ☐ Booking/SelectSeats:
+    ☐ Seat colors appropriate for dark mode:
+      ☐ Available: Green (adjusted)
+      ☐ Selected: Cyan/turquoise
+      ☐ Booked: Darker gray
+    ☐ Sidebar background dark
+    ☐ Text readable
+    ☐ Pulse animation visible
+  
+  ☐ Booking/Confirmation:
+    ☐ All content readable
+    ☐ Success banner colors appropriate
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 4. SAMPLE DATA VERIFICATION
+
+### 4.1 Users Created by Seeding
+Verify in SQL Server Management Studio or via database browser:
+
+Users Created:
+  ☐ admin@movieticket.com (Admin role)
+  ☐ john@example.com (User role)
+  ☐ jane@example.com (User role)
+  ☐ bob@example.com (User role)
+  ☐ alice@example.com (User role)
+
+Password: User@123 or Admin@123
+
+### 4.2 Movies in Database
+Expected: 5 movies
+
+  ☐ Inception (148 min, Sci-Fi)
+  ☐ The Dark Knight Rises (165 min, Action)
+  ☐ Interstellar (169 min, Sci-Fi)
+  ☐ The Shawshank Redemption (142 min, Drama)
+  ☐ Pulp Fiction (154 min, Crime/Drama)
+
+### 4.3 Theatres & Screens
+Expected: 2 theatres, 4 screens total
+
+  ☐ PVR Cinemas - Downtown (2 screens)
+    ☐ IMAX Screen 1
+    ☐ Dolby Cinema Screen 2
+  
+  ☐ AMC Cinemas - Midtown (2 screens)
+    ☐ Standard Screen 1
+    ☐ Premium Screen 2
+
+### 4.4 Seat Prices
+Expected: 3 categories per screen
+
+  ☐ Premium: ₹500
+  ☐ Gold: ₹300
+  ☐ Silver: ₹150
+
+### 4.5 Shows Generated
+Expected: Multiple shows (4-5 per movie per day, next 7 days)
+
+Verify:
+  ☐ Shows exist in database
+  ☐ Shows cover next 7 days
+  ☐ Timings: 10 AM, 1 PM, 4 PM, 7 PM, 10 PM
+  ☐ All movies have at least 2 shows per screen
+  ☐ Show end times calculated correctly
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 5. END-TO-END WORKFLOW TESTS
+
+### 5.1 Complete Booking Workflow (Happy Path)
+
+Test Steps:
+  1. ✓ Home page loads with carousel
+  2. ✓ Click "Book Now" on carousel or movie card
+  3. ✓ Movie Details page loads
+  4. ✓ Click "Book Tickets" on any future show
+  5. ✓ SelectSeats page loads with seat grid
+  6. ✓ Select 3-5 seats (mix of categories)
+  7. ✓ Sidebar updates with selection:
+     ✓ Seat count increases
+     ✓ Total price updates correctly
+     ✓ Seats appear in list
+  8. ✓ Click "Reserve Seats"
+  9. ✓ AJAX request sent (watch Network tab)
+  10. ✓ Request includes antiforgery token
+  11. ✓ Redirected to Confirmation page
+  12. ✓ Confirmation shows all booked details
+  13. ✓ Print button works
+  14. ✓ "Book More" button returns to Home
+
+Expected Results:
+  ✓ No console errors
+  ✓ No 500 errors
+  ✓ Booking saved to database
+  ✓ Seats marked as booked (not available for others)
+
+### 5.2 Dark Mode During Booking
+  1. ✓ Toggle dark mode before starting booking
+  2. ✓ Entire booking flow works in dark mode
+  3. ✓ Seat colors appropriate for dark mode
+  4. ✓ Confirmation page readable in dark mode
+  5. ✓ Toggle light mode mid-booking
+  6. ✓ Light mode applies immediately
+  7. ✓ Continue booking successfully
+
+### 5.3 Multiple Seats with Different Categories
+  1. ✓ Select seats from different pricing categories:
+     ✓ 1 Premium (₹500)
+     ✓ 2 Gold (₹300 each)
+     ✓ 1 Silver (₹150)
+  2. ✓ Total calculated correctly: ₹500 + ₹600 + ₹150 = ₹1250
+  3. ✓ Confirmation shows breakdown by category
+  4. ✓ Invoice/receipt shows correct amounts
+
+### 5.4 Double-Booking Prevention (Security Test)
+  1. ✓ Open SelectSeats page in Browser Tab 1
+  2. ✓ Open SelectSeats page in Browser Tab 2 (same show)
+  3. ✓ In Tab 1: Select seat A1, click Reserve
+  4. ✓ In Tab 2: Try to select same seat A1
+  5. ✓ AJAX error returned: "Seat A1 already booked"
+  6. ✓ Booking fails gracefully with error message
+  7. ✓ Tab 2 seat grid updates (A1 marked as booked)
+
+### 5.5 User Authorization Test
+  1. ✓ Login as user (john@example.com / User@123)
+  2. ✓ Complete a booking
+  3. ✓ Try to access another user's booking:
+     ✓ Manually navigate to /Booking/Confirmation/999 (wrong user)
+  4. ✓ Forbidden (403) error displayed
+  5. ✓ Cannot view bookings you don't own
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 6. PERFORMANCE & BROWSER COMPATIBILITY
+
+### 6.1 Load Time Testing
+Test on https://localhost:7001:
+
+Home Page:
+  ☐ Initial load: < 2 seconds
+  ☐ Carousel renders smoothly
+  ☐ No layout shifts (CLS)
+
+SelectSeats Page:
+  ☐ Initial load: < 3 seconds
+  ☐ Seat grid renders without flicker
+  ☐ jQuery selectors execute quickly
+
+Confirmation Page:
+  ☐ Load: < 1 second
+  ☐ All data populated
+  ☐ Print preview opens without lag
+
+### 6.2 Browser Compatibility
+Test on major browsers:
+
+Chrome/Chromium (Latest):
+  ☐ All features work
+  ☐ Dark mode toggle works
+  ☐ Animations smooth
+  ☐ AJAX requests complete
+  ☐ Responsive design adapts
+
+Firefox (Latest):
+  ☐ All features work
+  ☐ Fonts render correctly
+  ☐ Carousel transitions smooth
+  ☐ Seat selection works
+  ☐ Dark mode functional
+
+Safari (macOS/iOS):
+  ☐ Gradients render correctly
+  ☐ Touch interactions work
+  ☐ Responsive layout works
+  ☐ Dark mode supported
+
+Edge (Latest):
+  ☐ All features work
+  ☐ No compatibility issues
+
+Mobile Browsers:
+  ☐ Chrome Android
+  ☐ Safari iOS
+  ☐ Firefox Android
+
+### 6.3 DevTools Console Check
+✓ Open DevTools (F12)
+✓ No JavaScript errors in Console
+✓ No 404 errors in Network tab
+✓ CSS loads successfully
+✓ All resources load (fonts, images)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 7. RESPONSIVE DESIGN TESTING
+
+### 7.1 Desktop (> 1200px)
+  ☐ Full-width hero carousel (500px height)
+  ☐ Movie cards: 4 columns
+  ☐ Seat grid: 10×15 full size
+  ☐ Sidebar sticky on right
+  ☐ All text readable
+
+### 7.2 Laptop (1024px - 1200px)
+  ☐ Hero carousel: 500px height, adjusted padding
+  ☐ Movie cards: 3-4 columns (responsive)
+  ☐ Seat grid: Normal size (40×40px)
+  ☐ Sidebar: Sticky, slight space adjustments
+
+### 7.3 Tablet (768px - 1024px)
+  ☐ Hero carousel: 400px height
+  ☐ Movie cards: 2 columns
+  ☐ Seat size: 35×35px
+  ☐ Sidebar: Non-sticky (below grid)
+  ☐ Navigation collapses to hamburger menu
+  ☐ Text readable
+
+### 7.4 Mobile (480px - 768px)
+  ☐ Hero carousel: 300px height
+  ☐ Movie cards: 1 column, full-width
+  ☐ Seat size: 30×30px
+  ☐ Seat margin: 3px
+  ☐ Sidebar: Full-width, below grid
+  ☐ Buttons: Full-width, easy to tap
+  ☐ Text: Readable without zoom
+  ☐ No horizontal scroll
+
+### 7.5 Extra Small Mobile (< 480px)
+  ☐ All elements visible
+  ☐ Seat grid fits: 10×15 still, but zoomed out
+  ☐ Sidebar compressed but readable
+  ☐ Tap targets > 44×44px
+  ☐ No side scroll
+
+### 7.6 Rotation Test (Mobile)
+Portrait Mode:
+  ☐ Hero carousel full-width
+  ☐ Seat grid fits vertically
+  ☐ Sidebar below seats
+
+Landscape Mode:
+  ☐ Layout adjusts gracefully
+  ☐ Sidebar may show beside grid
+  ☐ No overflow or cut-off content
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 8. DATABASE VERIFICATION
+
+### 8.1 Verify Seeding Success via SQL
+
+Open SQL Server Management Studio (or similar):
+
+-- Check Users Created
+SELECT COUNT(*), Role FROM AspNetUsers 
+GROUP BY Role;
+
+Expected: 1 Admin, 4 User roles
+
+-- Check Movies
+SELECT * FROM Movies WHERE IsActive = 1;
+Expected: 5 rows
+
+-- Check Theatres
+SELECT * FROM Theatres WHERE IsActive = 1;
+Expected: 2 rows
+
+-- Check Shows (future only)
+SELECT COUNT(*) FROM Shows 
+WHERE StartDateTime > GETUTCDATE() AND IsActive = 1;
+Expected: 20+ shows
+
+-- Check Seat Prices
+SELECT DISTINCT Category, Price FROM SeatPrices 
+WHERE IsActive = 1;
+Expected: Premium (500), Gold (300), Silver (150)
+
+-- Check Bookings (after test booking)
+SELECT * FROM Bookings WHERE UserId IN (
+  SELECT Id FROM AspNetUsers WHERE Email = 'john@example.com'
+);
+Expected: Rows appear after each booking
+
+-- Check Booked Seats (after test booking)
+SELECT * FROM BookedSeats WHERE IsActive = 1;
+Expected: Rows added for each seat
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 9. TROUBLESHOOTING GUIDE
+
+### Problem: Fonts not loading (looks like default font)
+Solution:
+  ☐ Check _Layout.cshtml has Google Fonts <link> tag
+  ☐ Verify fonts URL: https://fonts.googleapis.com/...
+  ☐ Clear browser cache (Ctrl+Shift+Del)
+  ☐ Hard refresh (Ctrl+Shift+R)
+  ☐ Check DevTools Network tab for 404s on fonts
+
+### Problem: Dark mode toggle not working
+Solution:
+  ☐ Verify JavaScript at bottom of _Layout.cshtml exists
+  ☐ Check browser console for JS errors (F12)
+  ☐ Verify localStorage is enabled
+  ☐ Check that html element is being updated with data-bs-theme
+  ☐ Try: localStorage.clear() in console, then toggle again
+
+### Problem: Seat grid not rendering
+Solution:
+  ☐ Check seatmap.css is linked in _Layout.cshtml
+  ☐ Verify CSS file exists: /wwwroot/css/seatmap.css
+  ☐ Check browser console for CSS errors
+  ☐ Verify jQuery is loaded before seat selection script
+  ☐ Check SelectSeats.cshtml has correct model binding
+
+### Problem: Sample data not seeded
+Solution:
+  ☐ Verify SampleDataSeeding.cs exists in /Data folder
+  ☐ Check Program.cs calls SeedSampleDataAsync
+  ☐ Run: $ dotnet ef database drop --force
+  ☐ Run: $ dotnet ef database update
+  ☐ Run: $ dotnet run
+  ☐ Watch console output for seeding messages
+  ☐ Check database directly (SQL query)
+
+### Problem: AJAX POST returns 403 Forbidden
+Solution:
+  ☐ Verify [ValidateAntiForgeryToken] on ReserveSeats action
+  ☐ Verify @Html.AntiForgeryToken() in SelectSeats view
+  ☐ Verify jQuery includes token in request header
+  ☐ Check request includes __RequestVerificationToken parameter
+
+### Problem: Seat selection animation not smooth
+Solution:
+  ☐ Check browser supports CSS transitions/animations
+  ☐ Verify seatmap.css has @keyframes and transitions
+  ☐ Check GPU acceleration: Try reducing animation complexity
+  ☐ Close other apps consuming CPU
+  ☐ Test on different browser
+
+### Problem: Responsive layout breaks on mobile
+Solution:
+  ☐ Verify meta viewport tag in _Layout.cshtml:
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  ☐ Check Bootstrap is loaded (required for responsive grid)
+  ☐ Test on actual mobile device or Chrome DevTools mobile emulator
+  ☐ Verify @media queries in seatmap.css for mobile breakpoints
+  ☐ Check no fixed widths on container divs
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 10. FINAL DEPLOYMENT CHECKLIST
+
+Before deploying to production:
+
+Pre-Deployment:
+  ☐ All Phase 6 tests pass (Visual, Dark Mode, Sample Data, Workflows)
+  ☐ No console errors in any browser
+  ☐ No database errors in Application Insights
+  ☐ Performance acceptable (load times < 3s)
+  ☐ Responsive design tested on 3+ devices
+  ☐ Print functionality works
+  ☐ Mobile app compatibility verified
+
+Build & Release:
+  ☐ $ dotnet clean
+  ☐ $ dotnet build --configuration Release
+  ☐ $ dotnet test (if unit tests added)
+  ☐ Build output: "Build succeeded"
+  ☐ No warnings in build output
+
+Database:
+  ☐ Backups created before migration
+  ☐ Migrations reviewed and tested
+  ☐ Sample data staging environment seeded
+  ☐ Production seeds (if needed) prepared separately
+
+Configuration:
+  ☐ appsettings.json checked for secrets (none hardcoded)
+  ☐ appsettings.Production.json configured
+  ☐ Connection strings point to correct databases
+  ☐ CORS/security headers configured
+  ☐ Logging level appropriate
+
+Deployment:
+  ☐ Web server (IIS/Azure/etc.) configured
+  ☐ SSL certificate valid
+  ☐ Domain DNS configured
+  ☐ Health check endpoint accessible
+  ☐ All features tested on production server
+  ☐ Rollback plan documented
+
+Post-Deployment:
+  ☐ Monitor application logs
+  ☐ Monitor error rate (should be near 0%)
+  ☐ Monitor performance metrics
+  ☐ User feedback collected
+  ☐ Incident response team notified
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+✅ PHASE 6 TESTING COMPLETE
+
+This checklist covers all aspects of Phase 6:
+  ✓ Modern cinematic UI with animations
+  ✓ Dark mode support with persistence
+  ✓ Professional typography (Google Fonts)
+  ✓ Responsive design (mobile-first approach)
+  ✓ Sample data seeding (5 movies, 2 theatres, 4 screens, 4 users)
+  ✓ Complete end-to-end workflows
+  ✓ Database verification
+  ✓ Performance & compatibility
+  ✓ Comprehensive troubleshooting
+
+Ready for Phase 7: Admin Dashboard Enhancements & Analytics!
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════

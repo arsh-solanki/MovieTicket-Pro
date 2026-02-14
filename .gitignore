@@ -1,0 +1,77 @@
+# Visual Studio / Rider / VSCode
+.vs/
+.vscode/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Build outputs
+/bin/
+/obj/
+**/bin/
+**/obj/
+
+# NuGet
+*.nupkg
+packages/
+
+# ASP.NET Core
+appsettings.*.json
+!appsettings.json
+appsettings.Development.json
+secrets.json
+secrets.*.json
+
+# Logs
+logs/
+*.log
+
+# Database
+*.mdf
+*.ldf
+*.sqlite
+*.db
+
+# Certificates
+*.pfx
+*.p12
+
+# OS Files
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# User-specific files
+*.vsix
+*.sublime-workspace
+
+# Publish folder
+/publish/
+
+# JetBrains Rider
+.idea/
+*.sln.iml
+
+# Azure pipelines
+*.publishsettings
+
+# GitHub Actions caches
+.github/workflows/**/cache
+
+# Optional: keep build artifacts out
+*.vsix
+
+# Node
+node_modules/
+
+# Dotnet user secrets (do not commit user secrets file)
+%APPDATA%/Microsoft/UserSecrets/**
+
+# Ensure we don't accidentally commit environment files
+.env
+.env.*
+
+# Keep the important files tracked: csproj, Program.cs, Views/, Controllers/, Models/, wwwroot/
+# (No special action needed; patterns above exclude only build artifacts and secrets)

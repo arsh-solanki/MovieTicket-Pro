@@ -1,0 +1,480 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                        PHASE 3 – IDENTITY & AUTHORIZATION                       ║
+║                                                                                    ║
+║              ASP.NET Core Identity Setup + Scaffolding Instructions              ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+═════════════════════════════════════════════════════════════════════════════════
+  PROJECT SETUP & SCAFFOLDING COMMANDS
+═════════════════════════════════════════════════════════════════════════════════
+
+STEP 1: Install the ASP.NET Code Generator Tool (One-time, Global)
+────────────────────────────────────────────────────────────────────
+
+If you haven't installed the code generator tool, run this once:
+
+    dotnet tool install -g dotnet-aspnet-codegenerator
+
+To update if already installed:
+
+    dotnet tool update -g dotnet-aspnet-codegenerator
+
+
+STEP 2: Add Required NuGet Package to Project
+──────────────────────────────────────────────
+
+    dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
+
+This package provides the code generation templates for Identity scaffolding.
+
+
+STEP 3: Scaffold the Default Identity UI
+──────────────────────────────────────────
+
+Run this command in your project directory:
+
+    dotnet aspnet-codegenerator identity -dc ApplicationDbContext
+
+This command:
+  • Creates Areas/Identity/Pages/Account/ folder structure
+  • Generates Login.cshtml, Register.cshtml, Logout.cshtml, ForgotPassword.cshtml, etc.
+  • Generates corresponding .cshtml.cs (code-behind) files
+  • Generates ConfirmEmail, ResetPassword, and other account management pages
+  • Creates necessary views (Manage profile, change password, etc.)
+
+Expected output: "Scaffolding identity to the project was added successfully."
+
+After scaffolding, you'll see:
+    Areas/Identity/
+    ├── Pages/
+    │   └── Account/
+    │       ├── Login.cshtml & Login.cshtml.cs
+    │       ├── Register.cshtml & Register.cshtml.cs
+    │       ├── Logout.cshtml & Logout.cshtml.cs
+    │       ├── ForgotPassword.cshtml & ForgotPassword.cshtml.cs
+    │       ├── ResetPassword.cshtml & ResetPassword.cshtml.cs
+    │       ├── ConfirmEmail.cshtml & ConfirmEmail.cshtml.cs
+    │       └── Manage/
+    │           ├── Index.cshtml & Index.cshtml.cs
+    │           ├── ChangePassword.cshtml & ChangePassword.cshtml.cs
+    │           └── ...
+    ├── _ViewStart.cshtml
+    └── _ViewImports.cshtml
+
+
+STEP 4: Update _Layout.cshtml (Include Login Partial)
+──────────────────────────────────────────────────────
+
+After scaffolding, add the login/logout partial to your main layout.
+
+In Views/Shared/_Layout.cshtml, add this to the header (navbar):
+
+    <partial name="_LoginPartial" />
+
+The _LoginPartial is scaffolded at:
+    Areas/Identity/Pages/Shared/_LoginPartial.cshtml
+
+This displays:
+  • Login link (if not authenticated)
+  • Username + Logout link (if authenticated)
+
+
+STEP 5: (Optional) Create Areas/Admin Route in Program.cs
+──────────────────────────────────────────────────────────
+
+This is already done in the updated Program.cs:
+
+    app.MapControllerRoute(
+        name: "areas",
+        pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
+
+This enables routes like /Admin/Dashboard to work with the Admin area.
+
+
+═════════════════════════════════════════════════════════════════════════════════
+  PHASE 3 IMPLEMENTATION – WHAT'S PROVIDED
+═════════════════════════════════════════════════════════════════════════════════
+
+✓ PROGRAM.CS UPDATES
+  ├─ AddDbContext<ApplicationDbContext>
+  ├─ AddIdentity<ApplicationUser, IdentityRole> with password policy & lockout
+  ├─ AddDefaultUI() ← Key for default Identity pages
+  ├─ AddAuthorization with optional policies
+  ├─ AddControllersWithViews() + AddRazorPages()
+  ├─ app.UseAuthentication() BEFORE app.UseAuthorization()
+  ├─ app.MapRazorPages() for Identity pages
+  └─ Area route mapping for /Admin/* paths
+
+✓ AREAS/ADMIN FOLDER STRUCTURE
+  ├─ Controllers/DashboardController.cs
+  │  └─ [Authorize(Roles = "Admin")] — Only Admin role can access
+  │  └─ Index() action returns dashboard view
+  │
+  └─ Views/
+     ├─ Dashboard/Index.cshtml — Admin dashboard with quick links
+     └─ Shared/_AdminLayout.cshtml — Admin-specific layout with sidebar
+
+✓ IDENTITY DEFAULT UI (After Scaffolding)
+  ├─ Login.cshtml (/Identity/Account/Login)
+  ├─ Register.cshtml (/Identity/Account/Register)
+  ├─ Logout.cshtml (/Identity/Account/Logout)
+  ├─ ForgotPassword.cshtml, ResetPassword.cshtml, etc.
+  └─ Account management pages under Manage/
+
+═════════════════════════════════════════════════════════════════════════════════
+  ROLE-BASED AUTHORIZATION
+═════════════════════════════════════════════════════════════════════════════════
+
+TWO ROLES CREATED IN SEED DATA (Phase 2):
+  1. "Admin"  — Administrative access (manage content, view reports)
+  2. "User"   — Regular user access (browse, book tickets)
+
+PROTECTING CONTROLLERS/ACTIONS WITH [Authorize]:
+
+    // Entire controller is Admin-only:
+    [Area("Admin")]
+    [Authorize(Roles = "Admin")]
+    public class MoviesController : Controller
+    {
+        public IActionResult Index() { ... }  // Admin only
+        public IActionResult Create() { ... } // Admin only
+    }
+
+    // Specific action requires authentication (any role):
+    [Authorize]
+    public IActionResult MyBookings() { ... }
+
+    // Specific action requires Admin role:
+    [Authorize(Roles = "Admin")]
+    public IActionResult Reports() { ... }
+
+    // Multiple roles:
+    [Authorize(Roles = "Admin,Manager")]
+    public IActionResult Dashboard() { ... }
+
+    // Using policies (optional, set in Program.cs):
+    [Authorize(Policy = "AdminOnly")]
+    public IActionResult AdminDashboard() { ... }
+
+ACCESSING USER INFO IN CONTROLLERS:
+
+    public class MyController : Controller
+    {
+        private readonly UserManager<ApplicationUser> _userManager;
+
+        public MyController(UserManager<ApplicationUser> userManager)
+        {
+            _userManager = userManager;
+        }
+
+        [Authorize]
+        public async Task<IActionResult> MyProfile()
+        {
+            var user = await _userManager.GetUserAsync(User);
+            return View(user);
+        }
+    }
+
+CHECKING ROLES IN VIEWS:
+
+    @using Microsoft.AspNetCore.Identity
+    @inject UserManager<ApplicationUser> UserManager
+
+    @{
+        var user = await UserManager.GetUserAsync(User);
+        var isAdmin = User.IsInRole("Admin");
+    }
+
+    @if (isAdmin)
+    {
+        <a href="/Admin/Dashboard">Admin Panel</a>
+    }
+
+═════════════════════════════════════════════════════════════════════════════════
+  ROLE ASSIGNMENT & DEFAULT REGISTRATION
+═════════════════════════════════════════════════════════════════════════════════
+
+DEFAULT BEHAVIOR (After Scaffolding):
+  • New users registering via /Identity/Account/Register do NOT get a role assigned
+  • They can log in, but cannot access [Authorize(Roles = "User")] protected areas
+  • Admin must manually assign roles (or override Register.cshtml.cs)
+
+RECOMMENDED: AUTO-ASSIGN "USER" ROLE ON REGISTRATION
+
+After scaffolding, edit: Areas/Identity/Pages/Account/Register.cshtml.cs
+
+Find the method: public async Task OnPostAsync()
+
+Add this code after user is created (look for: _userManager.CreateAsync(user, password)):
+
+    // Auto-assign "User" role to new users
+    if (await _userManager.CreateAsync(user, Input.Password) == Microsoft.AspNetCore.Identity.IdentityResult.Success)
+    {
+        var roleResult = await _userManager.AddToRoleAsync(user, "User");
+        
+        if (!roleResult.Succeeded)
+        {
+            foreach (var error in roleResult.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+            return Page();
+        }
+
+        // ... rest of the code (sign in user, etc.)
+    }
+
+MANUAL ROLE ASSIGNMENT (For Admin Users):
+
+Create a simple admin tool or use SQL:
+
+    // Via C# (in some admin controller)
+    var user = await _userManager.FindByIdAsync(userId);
+    await _userManager.AddToRoleAsync(user, "Admin");
+
+    // Via SQL:
+    INSERT INTO AspNetUserRoles (UserId, RoleId)
+    SELECT u.Id, r.Id FROM AspNetUsers u, AspNetRoles r
+    WHERE u.Email = 'user@example.com' AND r.Name = 'Admin';
+
+═════════════════════════════════════════════════════════════════════════════════
+  HOW AUTHENTICATION/AUTHORIZATION FLOW WORKS
+═════════════════════════════════════════════════════════════════════════════════
+
+REQUEST FLOW:
+
+  1. User requests /Admin/Dashboard (without login)
+     ↓
+  2. DashboardController has [Authorize(Roles = "Admin")]
+     ↓
+  3. Authorization middleware checks: Is user authenticated? Does user have "Admin" role?
+     ↓
+  4a. If NO: Redirect to /Identity/Account/Login?returnUrl=/Admin/Dashboard
+  4b. If YES: Execute action, render view
+     ↓
+  5. User logs in with admin@movie.com / Admin@123!
+     ↓
+  6. Authentication middleware creates session/cookie
+     ↓
+  7. Middleware checks role: User has "Admin" role → Allow access
+     ↓
+  8. DashboardController.Index() executes, returns AdminDashboard view
+
+MIDDLEWARE ORDER IS CRITICAL (in Program.cs):
+
+    app.UseAuthentication();   // Step 1: Identify user (who are you?)
+    app.UseAuthorization();    // Step 2: Check permissions (what can you do?)
+
+If order is reversed:
+    ✗ Authorization checks before authentication
+    ✗ User is never identified → Always denies access
+    ✗ /Identity/Account/Login page also fails
+
+═════════════════════════════════════════════════════════════════════════════════
+  ACCESSING ADMIN DASHBOARD
+═════════════════════════════════════════════════════════════════════════════════
+
+URL PATTERN: /Admin/Dashboard or /Admin
+
+HOW THE ADMIN AREA ROUTE WORKS:
+
+Configured in Program.cs:
+    app.MapControllerRoute(
+        name: "areas",
+        pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
+
+This means:
+  • {area:exists} ← Must be in an [Area] attribute
+  • {controller=Dashboard} ← Default controller is Dashboard
+  • {action=Index} ← Default action is Index
+  • {id?} ← Optional ID parameter
+
+So these URLs all access DashboardController.Index():
+  ✓ /Admin
+  ✓ /Admin/
+  ✓ /Admin/Dashboard
+  ✓ /Admin/Dashboard/Index
+
+The Areas/Admin/Controllers/DashboardController has:
+    [Area("Admin")]
+    [Authorize(Roles = "Admin")]
+    public class DashboardController : Controller
+    {
+        public IActionResult Index() { ... }
+    }
+
+FLOW:
+  1. admin@movie.com logs in with password Admin@123!
+  2. Auth middleware creates cookie/session
+  3. User navigates to /Admin
+  4. Route matches: area=Admin, controller=Dashboard, action=Index
+  5. [Authorize(Roles = "Admin")] checks: User has Admin role? YES
+  6. DashboardController.Index() executes
+  7. Returns Areas/Admin/Views/Dashboard/Index.cshtml with _AdminLayout
+
+═════════════════════════════════════════════════════════════════════════════════
+  SECURITY BEST PRACTICES (FOR ACADEMIC PROJECT)
+═════════════════════════════════════════════════════════════════════════════════
+
+✓ ANTIFORGERY TOKENS
+  • All POST/PUT/DELETE forms must include [ValidateAntiForgeryToken]
+  • Razor automatically includes: <input type="hidden" name="__RequestVerificationToken" ... />
+  • Prevents CSRF (Cross-Site Request Forgery) attacks
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Create(MovieViewModel model)
+    {
+        // Form submits with token, server validates
+    }
+
+  In Razor Views:
+    <form method="post">
+        @Html.AntiForgeryToken()  <!-- Automatic in scaffolded forms -->
+        ...
+    </form>
+
+✓ ROLE-BASED AUTHORIZATION
+  • Use [Authorize(Roles = "Admin")] to protect admin actions
+  • Never trust client-side role checks (always verify server-side)
+  • Implement row-level security: users can only see their own bookings
+
+    [Authorize]
+    public async Task<IActionResult> MyBookings()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var bookings = await _db.Bookings
+            .Where(b => b.UserId == userId && b.IsActive)
+            .ToListAsync();
+        return View(bookings);
+    }
+
+✓ HTTPS IN PRODUCTION
+  • Always use HTTPS for production deployments
+  • Configure in Program.cs:
+    app.UseHsts(); // HTTP Strict Transport Security
+
+✓ PASSWORD POLICY
+  • Enforced in Program.cs identity config
+  • Admin@123! meets: 6+ chars, digit, non-alphanumeric, upper, lower
+
+✓ ACCOUNT LOCKOUT
+  • After 5 failed login attempts: 5-minute lockout
+  • Brute-force protection
+
+✓ SECURE COOKIES
+  • ASP.NET Core automatically:
+    • Sets HttpOnly flag (no JavaScript access)
+    • Sets Secure flag (HTTPS only, in production)
+    • Uses SameSite=Strict (CSRF protection)
+
+═════════════════════════════════════════════════════════════════════════════════
+  TESTING THE SETUP
+═════════════════════════════════════════════════════════════════════════════════
+
+1. Build and run the project:
+   $ dotnet run
+
+2. Navigate to home page:
+   https://localhost:xxxx/ (or http://localhost:xxxx in development)
+
+3. Look for login/logout partial in navbar (after scaffolding):
+   Should show "Login" link if not authenticated
+
+4. Click "Login", navigate to /Identity/Account/Login
+
+5. Login with:
+   Email: admin@movie.com
+   Password: Admin@123!
+
+6. After login:
+   • Navbar should show "admin@movie.com" with logout option
+   • Navigate to /Admin or /Admin/Dashboard
+   • Should see Admin Dashboard with quick links
+
+7. Test unauthorized access:
+   • Open new incognito/private browser tab
+   • Try to access /Admin/Dashboard without logging in
+   • Should redirect to /Identity/Account/Login?returnUrl=/Admin/Dashboard
+
+8. Register new user (after scaffolding):
+   • Navigate to /Identity/Account/Register
+   • Create new account
+   • Should auto-assign "User" role (if you implemented the override)
+   • User should NOT see /Admin/Dashboard (authorization check)
+
+═════════════════════════════════════════════════════════════════════════════════
+  TROUBLESHOOTING
+═════════════════════════════════════════════════════════════════════════════════
+
+ISSUE: Scaffolding fails with "dotnet aspnet-codegenerator: command not found"
+FIX:  Install the tool globally:
+      dotnet tool install -g dotnet-aspnet-codegenerator
+
+ISSUE: /Identity/Account/Login returns 404
+FIX:  Ensure app.MapRazorPages() is called in Program.cs (it is, already added)
+
+ISSUE: /Admin/Dashboard shows "Access Denied"
+FIX:  1. Ensure admin@movie.com is logged in
+      2. Check database: admin user has "Admin" role assigned
+      3. Verify [Authorize(Roles = "Admin")] on DashboardController
+
+ISSUE: Role not assigned after registration
+FIX:  Override Register.cshtml.cs to auto-assign "User" role (see section above)
+
+ISSUE: Middleware order error (Authorization before Authentication)
+FIX:  Check Program.cs: app.UseAuthentication() must come BEFORE app.UseAuthorization()
+
+═════════════════════════════════════════════════════════════════════════════════
+  NEXT STEPS (PHASE 4+)
+═════════════════════════════════════════════════════════════════════════════════
+
+After Phase 3 is complete, proceed to:
+
+PHASE 4: ViewModels & DTOs
+  • Create MovieCardViewModel, ShowDetailViewModel, SeatSelectionViewModel
+  • Create ReserveSeatsRequest/Response DTOs for AJAX
+
+PHASE 5: BookingController (Core Feature)
+  • GET /api/booking/seat-status/{showId} – AJAX endpoint
+  • POST /api/booking/reserve-seats – AJAX endpoint
+  • GET /Booking/Confirmation/{bookingId} – Confirmation page
+
+PHASE 6: Seat Selection View + jQuery/AJAX
+  • Views/Booking/SelectSeats.cshtml
+  • JavaScript for seat grid, selection, AJAX calls
+  • Bootstrap modals for error/success messages
+
+PHASE 7: Admin CRUD Controllers (Movies, Theatres, Shows, etc.)
+  • Areas/Admin/Controllers/MoviesController.cs
+  • Areas/Admin/Controllers/ShowsController.cs
+  • CRUD views (Index, Create, Edit, Delete)
+
+═════════════════════════════════════════════════════════════════════════════════
+  QUICK REFERENCE – KEY COMMANDS
+═════════════════════════════════════════════════════════════════════════════════
+
+# Install code generator (one-time):
+dotnet tool install -g dotnet-aspnet-codegenerator
+
+# Add package to project:
+dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
+
+# Scaffold Identity UI:
+dotnet aspnet-codegenerator identity -dc ApplicationDbContext
+
+# Build project:
+dotnet build
+
+# Run project:
+dotnet run
+
+# Create migration (if needed):
+dotnet ef migrations add MigrationName
+
+# Apply migration:
+dotnet ef database update
+
+═════════════════════════════════════════════════════════════════════════════════
+
+✅ PHASE 3 SETUP COMPLETE – Ready to scaffold Identity UI and proceed!

@@ -1,0 +1,231 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                   PHASE 2 – DBCONTEXT & CONFIGURATION COMPLETE ✓                ║
+║                                                                                    ║
+║        Movie Ticket Management System – ASP.NET Core MVC (2025–2026)             ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+───────────────────────────────────────────────────────────────────────────────────
+  FILES CREATED / MODIFIED IN PHASE 2
+───────────────────────────────────────────────────────────────────────────────────
+
+✓ Data/ApplicationDbContext.cs
+  ├─ IdentityDbContext<ApplicationUser>
+  ├─ 7 DbSet properties (Movie, Theatre, Screen, Show, SeatPrice, Booking, BookedSeat)
+  ├─ OnModelCreating with fluent API configurations
+  ├─ Unique indexes for data integrity
+  ├─ Foreign key relationships with cascade delete
+  └─ Seed data: Admin role, User role, admin@movie.com user
+
+✓ Program.cs (Updated)
+  ├─ DbContext registration (SQL Server provider)
+  ├─ Identity configuration (password policy, lockout settings)
+  ├─ AddEntityFrameworkStores + default token providers
+  ├─ Authentication & Authorization middleware
+  └─ MVC + Razor Pages services
+
+✓ appsettings.json (Updated)
+  ├─ ConnectionString: "Server=(localdb)\\mssqllocaldb;Database=MovieTicketDb;..."
+  └─ Logging configuration with EF Core SQL command logging
+
+───────────────────────────────────────────────────────────────────────────────────
+  MODELS UPDATED FROM PHASE 1
+───────────────────────────────────────────────────────────────────────────────────
+
+✓ BookingStatus.cs (NEW ENUM)
+  ├─ Pending (0)
+  ├─ Confirmed (1)
+  ├─ Refunded (2)
+  └─ Cancelled (3)
+
+✓ ApplicationUser.cs
+  ├─ Added: PhoneNumber override (explicit declaration)
+  ├─ Added: CreatedAt, UpdatedAt (audit trail)
+  └─ Relationships: 1:N Bookings
+
+✓ Movie.cs, Theatre.cs, Screen.cs, Show.cs, SeatPrice.cs
+  ├─ Added: UpdatedAt field (DateTime?)
+  └─ All relationships configured in DbContext
+
+✓ Booking.cs
+  ├─ Replaced: Status string → BookingStatus enum
+  ├─ Added: UpdatedAt field
+  └─ Relationships: ApplicationUser (N:1), Show (N:1), BookedSeats (1:N)
+
+✓ BookedSeat.cs
+  ├─ Added: [Required] on ShowId
+  ├─ Added: [ForeignKey(nameof(Show))] on ShowId
+  ├─ Added: UpdatedAt field
+  └─ UNIQUE INDEX: (ShowId, SeatNumber) ← PREVENTS DOUBLE-BOOKING
+
+───────────────────────────────────────────────────────────────────────────────────
+  CRITICAL CONFIGURATIONS
+───────────────────────────────────────────────────────────────────────────────────
+
+DATABASE INTEGRITY:
+  ✓ Unique Index: BookedSeat(ShowId, SeatNumber)
+    Purpose: Prevents booking same seat twice in same show
+    Error: DbUpdateException if duplicate (ShowId, SeatNumber) inserted
+
+  ✓ Unique Index: SeatPrice(ShowId, Category)
+    Purpose: Only one price per category per show
+
+  ✓ Unique Index: Screen(TheatreId, Name)
+    Purpose: No duplicate screen names per theatre
+
+  ✓ Unique Index: Theatre(Name, City)
+    Purpose: No duplicate theatre entries
+
+CASCADE DELETE:
+  ✓ Movie → Shows (delete movie = delete all shows)
+  ✓ Show → BookedSeats, SeatPrices, Bookings
+  ✓ Theatre → Screens
+  ⚠ User → Bookings (be careful with production data!)
+
+PASSWORD POLICY:
+  ✓ Minimum 6 characters
+  ✓ Must contain: digit, non-alphanumeric, uppercase, lowercase
+  ✓ Examples: "Admin@123!", "TestUser#456"
+
+LOCKOUT POLICY:
+  ✓ 5 failed attempts → 5 minute lockout
+  ✓ Brute-force protection
+
+───────────────────────────────────────────────────────────────────────────────────
+  SEEDED DATA (CREATED ON MIGRATION)
+───────────────────────────────────────────────────────────────────────────────────
+
+Roles (AspNetRoles):
+  ├─ Id: "admin-role-id"     | Name: "Admin"   | NormalizedName: "ADMIN"
+  └─ Id: "user-role-id"      | Name: "User"    | NormalizedName: "USER"
+
+Admin User (AspNetUsers):
+  ├─ Id: "admin-user-id"
+  ├─ UserName: admin@movie.com
+  ├─ Email: admin@movie.com
+  ├─ FirstName: Admin
+  ├─ LastName: User
+  ├─ PhoneNumber: +1234567890
+  ├─ Password (hashed): Admin@123!
+  ├─ IsActive: true
+  ├─ CreatedAt: DateTime.UtcNow
+  └─ Assigned Role: "Admin"
+
+───────────────────────────────────────────────────────────────────────────────────
+  NEXT: APPLY MIGRATIONS
+───────────────────────────────────────────────────────────────────────────────────
+
+Run these commands in order:
+
+  1. Create migration:
+     $ dotnet ef migrations add InitialCreate
+
+  2. Apply migration to database:
+     $ dotnet ef database update
+
+  3. Verify database was created:
+     • Check SQL Server: (localdb)\mssqllocaldb
+     • Database name: MovieTicketDb
+     • Tables: 15+ (including Identity tables + custom tables)
+     • Check seeded data: Admin role, admin@movie.com user
+
+  4. Test database connection:
+     $ dotnet run
+     Navigate to https://localhost:xxxx/
+     (Should load without database errors)
+
+───────────────────────────────────────────────────────────────────────────────────
+  QUICK ENTITY RELATIONSHIPS DIAGRAM
+───────────────────────────────────────────────────────────────────────────────────
+
+ApplicationUser (1) ──────┐
+                           ├──→ (N) Booking
+                           
+Movie (1) ────────────┐
+                      ├──→ (N) Show ────┬──→ (N) SeatPrice
+                      │                 ├──→ (N) Booking
+Theatre (1) ──→ (N) Screen             └──→ (N) BookedSeat
+                                           
+Booking (1) ─────┐
+                 ├──→ (N) BookedSeat
+                 └──→ (1) Show
+
+Show (1) ────┐
+             ├──→ (N) BookedSeat (Unique: ShowId, SeatNumber)
+             └──→ (N) SeatPrice (Unique: ShowId, Category)
+
+───────────────────────────────────────────────────────────────────────────────────
+  EXAMPLE: QUERYING AFTER MIGRATION
+───────────────────────────────────────────────────────────────────────────────────
+
+// Get all active movies
+var movies = await db.Movies
+    .Where(m => m.IsActive)
+    .OrderByDescending(m => m.CreatedAt)
+    .ToListAsync();
+
+// Get all shows for a movie with seat prices
+var showsWithPrices = await db.Shows
+    .Where(s => s.MovieId == movieId && s.IsActive)
+    .Include(s => s.SeatPrices)
+    .OrderBy(s => s.StartDateTime)
+    .ToListAsync();
+
+// Get booked seats for a show
+var bookedSeats = await db.BookedSeats
+    .Where(bs => bs.ShowId == showId && bs.IsActive)
+    .Select(bs => bs.SeatNumber)
+    .ToListAsync();
+
+// Get user's booking history
+var userBookings = await db.Bookings
+    .Where(b => b.UserId == userId && b.IsActive)
+    .Include(b => b.Show)
+    .ThenInclude(s => s.Movie)
+    .Include(b => b.BookedSeats)
+    .OrderByDescending(b => b.CreatedAt)
+    .ToListAsync();
+
+───────────────────────────────────────────────────────────────────────────────────
+  IMPORTANT NOTES FOR NEXT PHASES
+───────────────────────────────────────────────────────────────────────────────────
+
+• All queries must manually filter IsActive = true (no global query filter yet)
+• Use DbContext.Database.BeginTransaction() for multi-entity operations (e.g., booking)
+• Handle DbUpdateException when unique constraints are violated
+• Use Include() / ThenInclude() for eager loading of related entities
+• Always use .ToListAsync() for async/await pattern
+• Password validation done by Identity framework automatically
+• Verify [Authorize] attributes on controllers that need authentication
+
+───────────────────────────────────────────────────────────────────────────────────
+  DOCUMENTATION FILES CREATED
+───────────────────────────────────────────────────────────────────────────────────
+
+✓ Models/DATA_DICTIONARY.txt
+  └─ Complete data structure, constraints, business logic flow
+
+✓ Models/PHASE1_2_MODELS_REFERENCE.txt
+  └─ How models interact, migration sequence, soft-delete pattern
+
+✓ Data/PHASE2_DBCONTEXT_SUMMARY.txt
+  └─ DbContext configuration, relationships, identity setup
+
+───────────────────────────────────────────────────────────────────────────────────
+  READY FOR PHASE 3?
+───────────────────────────────────────────────────────────────────────────────────
+
+Phase 3 will cover:
+  ✓ Identity & Program.cs (already mostly done!)
+  ✓ Brief role-based authorization setup
+  ✓ Authentication middleware
+  ✓ User registration & login pages (optional: use Identity scaffolding)
+
+Then Phase 4 onwards:
+  ✓ ViewModels & DTOs
+  ✓ BookingController (core booking logic)
+  ✓ Seat selection view + jQuery/AJAX
+  ✓ Admin CRUD operations
+
+═══════════════════════════════════════════════════════════════════════════════════
+
+PHASE 2 COMPLETE ✓ Ready for next phase or any fixes/changes?

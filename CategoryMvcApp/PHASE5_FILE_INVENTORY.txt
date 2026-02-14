@@ -1,0 +1,517 @@
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 5 FILE INVENTORY & DIRECTORY STRUCTURE
+═══════════════════════════════════════════════════════════════════════════════
+
+Complete list of all Phase 5 files created and modified.
+
+═════════════════════════════════════════════════════════════════════════════════
+DIRECTORY STRUCTURE
+═════════════════════════════════════════════════════════════════════════════════
+
+e:\dot net\CategoryMvcApp\
+│
+├─ Controllers\
+│  ├─ BookingController.cs                    ✅ CREATED (500+ lines)
+│  ├─ HomeController.cs                       ✏️  MODIFIED
+│  └─ MoviesController.cs                     ✅ CREATED (180+ lines)
+│
+├─ Views\
+│  ├─ Home\
+│  │  └─ Index.cshtml                         ✏️  MODIFIED
+│  │
+│  ├─ Movies\
+│  │  ├─ Index.cshtml                         ✅ CREATED (100+ lines)
+│  │  └─ Details.cshtml                       ✅ CREATED (150+ lines)
+│  │
+│  └─ Booking\
+│     ├─ SelectSeats.cshtml                   ✅ CREATED (350+ lines)
+│     └─ Confirmation.cshtml                  ✅ CREATED (280+ lines)
+│
+├─ (Root Project Directory)
+│  ├─ PHASE5_CONTROLLERS_REFERENCE.txt        ✅ CREATED (10,000+ words)
+│  ├─ PHASE5_EXECUTION_FLOW.txt               ✅ CREATED (8,000+ words)
+│  ├─ PHASE5_TESTING_GUIDE.txt                ✅ CREATED (6,000+ words)
+│  ├─ PHASE5_COMPLETE_SUMMARY.txt             ✅ CREATED (5,000+ words)
+│  ├─ PHASE5_QUICK_REFERENCE.txt              ✅ CREATED (2,000+ words)
+│  └─ PHASE5_FILE_INVENTORY.txt               ✅ THIS FILE
+│
+├─ Models\
+│  └─ (From previous phases - no changes)
+│
+├─ ViewModels\
+│  └─ (From Phase 4 - no new ViewModels)
+│
+├─ Properties\
+│  └─ (No changes)
+│
+├─ wwwroot\
+│  └─ (CSS/JS from Bootstrap - no changes)
+│
+└─ (Configuration files)
+   ├─ appsettings.json
+   ├─ appsettings.Development.json
+   ├─ Program.cs
+   └─ CategoryMvcApp.csproj
+
+═════════════════════════════════════════════════════════════════════════════════
+DETAILED FILE DESCRIPTIONS
+═════════════════════════════════════════════════════════════════════════════════
+
+CONTROLLERS (3 files):
+
+┌─ BookingController.cs (NEW - 500+ lines)
+│  Location: Controllers\BookingController.cs
+│  Purpose: Core booking functionality
+│  Methods:
+│    • GET SelectSeats(int showId) - Seat selection page
+│    • GET GetSeatStatus(int showId) - AJAX JSON endpoint
+│    • POST ReserveSeats([FromBody] ReserveSeatsRequest) - AJAX booking
+│    • GET Confirmation(int bookingId) - Confirmation display
+│  Key Features:
+│    • [Authorize] attribute for authentication
+│    • [ValidateAntiForgeryToken] for CSRF protection
+│    • Database transaction for atomicity
+│    • Race condition prevention
+│    • User ownership verification
+│    • Comprehensive logging
+│  Dependencies:
+│    • ApplicationDbContext
+│    • ILogger<BookingController>
+│    • System.Security.Claims
+│  Code Quality:
+│    • 100+ lines documentation
+│    • Async/await patterns throughout
+│    • Try-catch error handling
+│    • Helpful log messages
+│
+├─ HomeController.cs (MODIFIED)
+│  Location: Controllers\HomeController.cs
+│  Changes:
+│    • Added using: CategoryMvcApp.ViewModels, Microsoft.EntityFrameworkCore
+│    • Added dependency injection: ApplicationDbContext
+│    • Updated Index() to load movies and map to MovieCardViewModel
+│    • Added try-catch with logging
+│    • Made async (Task<IActionResult>)
+│  Lines: ~70
+│
+└─ MoviesController.cs (NEW - 180+ lines)
+   Location: Controllers\MoviesController.cs
+   Purpose: Movie listing and detail pages
+   Methods:
+     • GET Index() - Movie listing
+     • GET Details(int id) - Movie details with showtimes
+     • GET ShowDetails(int id) - Optional show details
+   Features:
+     • Nested ViewModels (MovieDetailVM with List<ShowListItemVM>)
+     • Filter future shows only
+     • Calculate price ranges
+     • Error handling with logging
+   Code Quality:
+     • Async/await patterns
+     • Comprehensive documentation
+     • Proper error handling
+
+
+VIEWS (5 files):
+
+┌─ Views/Home/Index.cshtml (MODIFIED)
+│  Location: Views\Home\Index.cshtml
+│  Purpose: Home page with movie grid
+│  Model: List<MovieCardViewModel>
+│  Changes:
+│    • Replaced welcome text with movie grid
+│    • Added hero section with gradient background
+│    • Added responsive card layout (4 columns)
+│    • Added CSS hover effects
+│  Features:
+│    • Movie posters with fallback
+│    • Movie titles and release dates
+│    • Truncated descriptions
+│    • "View & Book" button per movie
+│    • Responsive grid (adjusts on smaller screens)
+│  CSS: ~30 lines (hover effects, transitions)
+│
+├─ Views/Movies/Index.cshtml (NEW - 100+ lines)
+│  Location: Views\Movies\Index.cshtml
+│  Purpose: Alternative movie listing page
+│  Model: List<MovieCardViewModel>
+│  Features:
+│    • Similar to Home/Index
+│    • Movie card layout
+│    • Responsive design
+│    • Empty state alert
+│  CSS: ~20 lines (card styling)
+│
+├─ Views/Movies/Details.cshtml (NEW - 150+ lines)
+│  Location: Views\Movies\Details.cshtml
+│  Purpose: Movie details with available showtimes
+│  Model: MovieDetailViewModel
+│  Layout:
+│    • Left column: Movie poster, title, duration, release date
+│    • Right column: Description, showtimes list
+│  Showtime Cards:
+│    • Theatre name and screen
+│    • Date/time display
+│    • Price range badge
+│    • "Book Tickets" button → /Booking/SelectSeats
+│  CSS: ~20 lines (card hover effects)
+│
+├─ Views/Booking/SelectSeats.cshtml (NEW - 350+ lines)
+│  Location: Views\Booking\SelectSeats.cshtml
+│  Purpose: Interactive seat selection with AJAX
+│  Model: SeatSelectionViewModel
+│  Layout:
+│    • Header: Movie title, theatre, show time, poster
+│    • Two-column: Seat grid (left), sidebar (right)
+│  Sidebar:
+│    • Legend (color codes)
+│    • Pricing table
+│    • Selected seats list (dynamic)
+│    • Total amount display
+│    • "Reserve Seats" button (disabled until 1+ seat selected)
+│  jQuery Script (~180 lines):
+│    • initializeSeatGrid() - Generate 10×15 seat grid
+│    • loadSeatStatus() - AJAX call to get booked seats
+│    • Seat click handlers - Select/deselect logic
+│    • updateSummary() - Real-time price calculation
+│    • Reserve button click - AJAX POST with antiforgery token
+│    • Remove seat functionality
+│  CSS (~100 lines):
+│    • Seat styling (colors, hover effects)
+│    • Responsive grid layout
+│    • Sticky sidebar on desktop
+│    • Mobile adaptations
+│    • Print styles
+│
+└─ Views/Booking/Confirmation.cshtml (NEW - 280+ lines)
+   Location: Views\Booking\Confirmation.cshtml
+   Purpose: Post-booking confirmation display
+   Model: BookingConfirmationViewModel
+   Layout:
+     • Success alert: "✅ Booking Confirmed!"
+     • Two-column: Main (movie details, seats), Sidebar (summary)
+   Main Content:
+     • Movie poster, title, theatre, screen, showtime
+     • Booked seats grid (3-column layout)
+     • Each seat card: number, category, price
+     • Notes section (if applicable)
+   Sidebar:
+     • Booking summary (seat count, numbers)
+     • Price breakdown by category
+     • Total amount (large, green)
+     • Booking ID and confirmation number
+     • Action buttons (Print, Book More, View History)
+     • Important info box (arrival time, cancellation policy, etc.)
+   Features:
+     • Print-friendly CSS
+     • Responsive layout (sticky sidebar on desktop)
+     • Mobile-optimized
+   CSS (~80 lines):
+     • Card styling
+     • Price breakdown layout
+     • Print media queries
+
+
+DOCUMENTATION (6 files):
+
+┌─ PHASE5_CONTROLLERS_REFERENCE.txt (NEW - 10,000+ words)
+│  Location: e:\dot net\CategoryMvcApp\PHASE5_CONTROLLERS_REFERENCE.txt
+│  Content:
+│    • Complete API reference for all controllers
+│    • Detailed booking flow explanation (5,000+ words)
+│    • Controller actions reference with examples
+│    • jQuery/AJAX integration guide
+│    • Database transaction flow explanation
+│    • View rendering & styling overview
+│    • Error handling documentation
+│    • Antiforgery token implementation
+│    • Testing scenarios
+│    • Key files created summary
+│    • Integration checklist
+│  Audience: Developers needing detailed API reference
+│
+├─ PHASE5_EXECUTION_FLOW.txt (NEW - 8,000+ words)
+│  Location: e:\dot net\CategoryMvcApp\PHASE5_EXECUTION_FLOW.txt
+│  Content:
+│    • Step-by-step user journey (6 detailed phases)
+│    • HTTP requests/responses for each phase
+│    • Server processing logic with code snippets
+│    • jQuery/AJAX implementation details
+│    • Database transaction step-by-step
+│    • Security features explanation
+│    • Complete request/response examples
+│    • Safety layers documentation
+│  Audience: Developers understanding the complete flow
+│
+├─ PHASE5_TESTING_GUIDE.txt (NEW - 6,000+ words)
+│  Location: e:\dot net\CategoryMvcApp\PHASE5_TESTING_GUIDE.txt
+│  Content:
+│    • Pre-testing setup (compilation, database, seed data)
+│    • Unit testing procedures (6 test cases)
+│    • Integration testing (5 workflow tests)
+│    • Front-end testing (4 jQuery tests)
+│    • Browser compatibility testing
+│    • Comprehensive verification checklist
+│    • Troubleshooting guide
+│    • Next steps after successful testing
+│  Audience: QA engineers, testers
+│
+├─ PHASE5_COMPLETE_SUMMARY.txt (NEW - 5,000+ words)
+│  Location: e:\dot net\CategoryMvcApp\PHASE5_COMPLETE_SUMMARY.txt
+│  Content:
+│    • Phase 5 overview and status
+│    • Complete deliverables checklist
+│    • File structure and locations
+│    • Key features implemented (8 major features)
+│    • Technical architecture (MVC pattern, data flow)
+│    • Code quality & best practices
+│    • Performance considerations
+│    • Testing summary
+│    • Known limitations & future enhancements
+│    • Deployment checklist
+│    • Next phase (Phase 6) planning
+│  Audience: Project managers, stakeholders, developers
+│
+├─ PHASE5_QUICK_REFERENCE.txt (NEW - 2,000+ words)
+│  Location: e:\dot net\CategoryMvcApp\PHASE5_QUICK_REFERENCE.txt
+│  Content:
+│    • Route map (all URLs)
+│    • ViewModel summary (all classes used)
+│    • Controller actions summary (all methods)
+│    • jQuery code snippets (ready to use)
+│    • CSS classes reference
+│    • Database relationships
+│    • Error codes & responses
+│    • Authentication & authorization
+│    • Transaction flow (step-by-step)
+│    • Common issues & solutions
+│    • Files created/modified list
+│    • Quick checklist before deployment
+│  Audience: Quick lookup for developers during development
+│
+└─ PHASE5_FILE_INVENTORY.txt (NEW - THIS FILE)
+   Location: e:\dot net\CategoryMvcApp\PHASE5_FILE_INVENTORY.txt
+   Content:
+     • This document
+     • Directory structure
+     • Detailed file descriptions
+     • Files modified/created summary
+
+═════════════════════════════════════════════════════════════════════════════════
+FILES CREATED VS MODIFIED
+═════════════════════════════════════════════════════════════════════════════════
+
+CREATED (9 files):
+  ✅ Controllers/BookingController.cs
+  ✅ Controllers/MoviesController.cs
+  ✅ Views/Movies/Index.cshtml
+  ✅ Views/Movies/Details.cshtml
+  ✅ Views/Booking/SelectSeats.cshtml
+  ✅ Views/Booking/Confirmation.cshtml
+  ✅ PHASE5_CONTROLLERS_REFERENCE.txt
+  ✅ PHASE5_EXECUTION_FLOW.txt
+  ✅ PHASE5_TESTING_GUIDE.txt
+  ✅ PHASE5_COMPLETE_SUMMARY.txt
+  ✅ PHASE5_QUICK_REFERENCE.txt
+  ✅ PHASE5_FILE_INVENTORY.txt
+
+MODIFIED (2 files):
+  ✏️  Controllers/HomeController.cs
+  ✏️  Views/Home/Index.cshtml
+
+UNCHANGED (from previous phases):
+  • All models (Phase 1)
+  • ApplicationDbContext (Phase 2)
+  • Identity scaffolding (Phase 3)
+  • All ViewModels (Phase 4)
+  • Program.cs (minor - should still work)
+  • appsettings.json
+  • CategoryMvcApp.csproj
+
+═════════════════════════════════════════════════════════════════════════════════
+CODE STATISTICS
+═════════════════════════════════════════════════════════════════════════════════
+
+Controllers:
+  BookingController.cs:       ~500 lines (C#)
+  HomeController.cs:          ~70 lines (C#, modified)
+  MoviesController.cs:        ~180 lines (C#)
+  Total:                      ~750 lines
+
+Views:
+  Home/Index.cshtml:          ~100 lines (Razor)
+  Movies/Index.cshtml:        ~100 lines (Razor)
+  Movies/Details.cshtml:      ~150 lines (Razor)
+  Booking/SelectSeats.cshtml: ~350 lines (Razor + HTML + CSS + jQuery)
+  Booking/Confirmation.cshtml: ~280 lines (Razor + HTML + CSS)
+  Total:                      ~980 lines
+
+Documentation:
+  PHASE5_CONTROLLERS_REFERENCE.txt: ~10,000 words
+  PHASE5_EXECUTION_FLOW.txt:        ~8,000 words
+  PHASE5_TESTING_GUIDE.txt:         ~6,000 words
+  PHASE5_COMPLETE_SUMMARY.txt:      ~5,000 words
+  PHASE5_QUICK_REFERENCE.txt:       ~2,000 words
+  PHASE5_FILE_INVENTORY.txt:        ~1,000 words (this file)
+  Total:                            ~32,000 words
+
+Grand Total Code:    ~1,730 lines (C#, Razor, HTML, CSS, jQuery)
+Grand Total Docs:    ~32,000 words
+
+═════════════════════════════════════════════════════════════════════════════════
+DEPENDENCIES & REQUIREMENTS
+═════════════════════════════════════════════════════════════════════════════════
+
+Required NuGet Packages (should already be installed from previous phases):
+  • Microsoft.EntityFrameworkCore
+  • Microsoft.EntityFrameworkCore.SqlServer
+  • Microsoft.AspNetCore.Identity.UI
+  • Microsoft.AspNetCore.Mvc
+
+JavaScript Libraries (CDN, included via _Layout.cshtml):
+  • jQuery (for AJAX and DOM manipulation)
+  • Bootstrap (CSS framework)
+  • Popper.js (for tooltips)
+
+Frontend Requirements:
+  • jQuery ≥ 3.6
+  • Bootstrap ≥ 5.1
+  • Modern browser (Chrome, Firefox, Safari, Edge)
+
+Database:
+  • SQL Server LocalDB or SQL Server Express
+  • MovieTicketDb database (created in Phase 2)
+  • All tables and migrations applied
+
+═════════════════════════════════════════════════════════════════════════════════
+GETTING STARTED WITH PHASE 5
+═════════════════════════════════════════════════════════════════════════════════
+
+1. BUILD PROJECT:
+   $ cd e:\dot net
+   $ dotnet build
+   Expected: 0 errors, 0 warnings
+
+2. VERIFY DATABASE:
+   $ dotnet ef database update
+   Expected: All migrations applied
+
+3. SEED DATA (if needed):
+   Use SQL script or DbContext seed in ApplicationDbContext.OnModelCreating()
+   Ensure: Movies, Theatres, Screens, Shows, SeatPrices exist
+
+4. RUN APPLICATION:
+   $ dotnet run
+   Navigate to: http://localhost:5000
+
+5. TEST BOOKING FLOW:
+   • Home page → Click movie → View showtimes
+   • Click "Book Tickets" → Seat selection page
+   • Select 2-3 seats → Click "Reserve"
+   • Verify AJAX POST succeeds → Confirmation page loads
+
+6. VERIFY DATABASE:
+   • Check Bookings table: SELECT COUNT(*) FROM Bookings;
+   • Check BookedSeats: SELECT COUNT(*) FROM BookedSeats;
+
+7. READ DOCUMENTATION:
+   • Start with: PHASE5_QUICK_REFERENCE.txt (fast lookup)
+   • Deep dive: PHASE5_EXECUTION_FLOW.txt (understand flow)
+   • Testing: PHASE5_TESTING_GUIDE.txt (verify features)
+
+═════════════════════════════════════════════════════════════════════════════════
+TROUBLESHOOTING FILE ISSUES
+═════════════════════════════════════════════════════════════════════════════════
+
+File Not Found:
+  → Ensure all files created in correct directories
+  → Use absolute paths: e:\dot net\CategoryMvcApp\...
+  → Check folder structure matches documentation
+
+Compilation Errors:
+  → Verify using statements at top of files
+  → Check namespaces: CategoryMvcApp.Controllers, CategoryMvcApp.ViewModels
+  → Ensure ViewModels from Phase 4 exist
+
+Routing Issues:
+  → Verify controller names: BookingController, MoviesController
+  → Ensure [Route] attributes correct
+  → Check action method names and parameters
+
+View Issues:
+  → Verify @model declarations match
+  → Check @Html.AntiForgeryToken() present in forms
+  → Ensure Layout is set to _Layout.cshtml
+
+AJAX Issues:
+  → Open browser DevTools (F12)
+  → Check Network tab for failed requests
+  → Check Console tab for JavaScript errors
+  → Verify $ (jQuery) available in console
+
+═════════════════════════════════════════════════════════════════════════════════
+DOCUMENTATION READING ORDER
+═════════════════════════════════════════════════════════════════════════════════
+
+Quick Start (5 minutes):
+  1. PHASE5_QUICK_REFERENCE.txt - Overview of routes, ViewModels, actions
+
+Understanding (30 minutes):
+  2. PHASE5_COMPLETE_SUMMARY.txt - Architecture and features overview
+  3. PHASE5_CONTROLLERS_REFERENCE.txt - API reference with examples
+
+Deep Dive (60 minutes):
+  4. PHASE5_EXECUTION_FLOW.txt - Complete user journey with code
+  5. PHASE5_TESTING_GUIDE.txt - Testing procedures
+
+Reference (as needed):
+  6. PHASE5_QUICK_REFERENCE.txt - Code snippets and lookup
+  7. PHASE5_FILE_INVENTORY.txt - This file, for file locations
+
+═════════════════════════════════════════════════════════════════════════════════
+NEXT STEPS
+═════════════════════════════════════════════════════════════════════════════════
+
+After Phase 5 Complete:
+
+✅ Short Term (This Week):
+   □ Compile and verify no errors
+   □ Run locally and test booking flow
+   □ Review documentation
+   □ Test in multiple browsers
+   □ Verify database transactions
+
+✅ Medium Term (Next Week):
+   □ User acceptance testing (stakeholders)
+   □ Load testing (concurrent users)
+   □ Performance optimization
+   □ Security review
+   □ Database backup strategy
+
+✅ Long Term (Planning):
+   □ Proceed to Phase 6 (Admin Controls)
+   □ Production deployment planning
+   □ Monitoring and logging setup
+   □ User training materials
+
+═════════════════════════════════════════════════════════════════════════════════
+CONTACT & SUPPORT
+═════════════════════════════════════════════════════════════════════════════════
+
+Questions about Phase 5 implementation:
+  • Review PHASE5_QUICK_REFERENCE.txt for quick answers
+  • Check PHASE5_CONTROLLERS_REFERENCE.txt for API details
+  • See PHASE5_TESTING_GUIDE.txt for troubleshooting
+
+Issues or bugs:
+  • Check browser console (F12) for JavaScript errors
+  • Review Application logs (Debug output window)
+  • Verify database state (SQL Server Management Studio)
+  • Reference PHASE5_TESTING_GUIDE.txt troubleshooting section
+
+═════════════════════════════════════════════════════════════════════════════════
+
+PROJECT STATUS: Phase 5 Implementation COMPLETE ✅
+NEXT PHASE: Phase 6 (Admin Controls & Reporting) - READY FOR PLANNING
+
+═════════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,303 @@
+@model List<BookingHistoryItemViewModel>
+
+@{
+    ViewData["Title"] = "My Bookings";
+}
+
+<div class="container mt-5">
+    <!-- Header Section -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="mb-2">My Bookings</h1>
+                    <p class="text-muted">Manage and view all your movie bookings</p>
+                </div>
+                <a href="@Url.Action("Index", "Home")" class="btn btn-outline-primary">
+                    <i class="bi bi-plus-lg"></i> New Booking
+                </a>
+            </div>
+        </div>
+    </div>
+
+    @if (Model == null || Model.Count == 0)
+    {
+        <!-- Empty State -->
+        <div class="alert alert-info text-center py-5">
+            <div class="mb-3">
+                <i class="bi bi-calendar-event" style="font-size: 3rem; color: #0d6efd;"></i>
+            </div>
+            <h4>No Bookings Found</h4>
+            <p class="mb-3">You haven't made any bookings yet. Browse movies and book your seats now!</p>
+            <a href="@Url.Action("Index", "Home")" class="btn btn-primary">
+                <i class="bi bi-search"></i> Browse Movies
+            </a>
+        </div>
+    }
+    else
+    {
+        <!-- Upcoming Bookings Section -->
+        <div class="mb-5">
+            <h3 class="mb-3">
+                <i class="bi bi-calendar-check" style="color: #28a745;"></i>
+                Upcoming Shows
+            </h3>
+
+            @{
+                var upcomingBookings = Model.Where(b => b.IsUpcoming).OrderBy(b => b.ShowDateTime).ToList();
+            }
+
+            @if (upcomingBookings.Count == 0)
+            {
+                <div class="alert alert-secondary">
+                    No upcoming bookings. Book your favorite movies!
+                </div>
+            }
+            else
+            {
+                <div class="row">
+                    @foreach (var booking in upcomingBookings)
+                    {
+                        <div class="col-md-6 col-lg-4 mb-3">
+                            <div class="card booking-card h-100 shadow-sm">
+                                <!-- Movie Poster -->
+                                <div class="position-relative" style="height: 250px; overflow: hidden;">
+                                    <img src="@booking.MoviePosterUrl" 
+                                         alt="@booking.MovieTitle" 
+                                         class="card-img-top" 
+                                         style="height: 100%; object-fit: cover;"
+                                         onerror="this.src='/images/default-movie.jpg'">
+                                    <div class="position-absolute top-0 end-0 m-2">
+                                        <span class="badge bg-success">Upcoming</span>
+                                    </div>
+                                </div>
+
+                                <div class="card-body d-flex flex-column">
+                                    <!-- Movie Title -->
+                                    <h5 class="card-title text-truncate">@booking.MovieTitle</h5>
+
+                                    <!-- Theatre Info -->
+                                    <div class="mb-3 small text-muted">
+                                        <div>
+                                            <i class="bi bi-geo-alt"></i>
+                                            @booking.TheatreName
+                                        </div>
+                                        <div>
+                                            <i class="bi bi-film"></i>
+                                            @booking.ScreenName
+                                        </div>
+                                    </div>
+
+                                    <!-- Show Date/Time -->
+                                    <div class="alert alert-info alert-sm py-2 px-3 mb-3" role="alert">
+                                        <small>
+                                            <i class="bi bi-calendar-event"></i>
+                                            @booking.ShowDateTime.ToString("MMM dd, yyyy")
+                                            <br>
+                                            <i class="bi bi-clock"></i>
+                                            @booking.ShowDateTime.ToString("hh:mm tt")
+                                        </small>
+                                    </div>
+
+                                    <!-- Seats Info -->
+                                    <div class="mb-3 small">
+                                        <div class="fw-semibold mb-1">Seats (@booking.SeatCount)</div>
+                                        <div class="text-muted">@booking.SeatNumbers</div>
+                                    </div>
+
+                                    <!-- Amount -->
+                                    <div class="alert alert-warning alert-sm py-2 px-3 mb-3" role="alert">
+                                        <strong>@booking.TotalAmount.ToString("₹ #,##0.00")</strong>
+                                    </div>
+
+                                    <!-- Confirmation Number -->
+                                    <div class="mb-3 small text-center text-muted">
+                                        <strong>@booking.ConfirmationNumber</strong>
+                                    </div>
+
+                                    <!-- Action Buttons -->
+                                    <div class="mt-auto d-flex gap-2">
+                                        <a href="@Url.Action("Details", "Booking", new { id = booking.BookingId })" 
+                                           class="btn btn-sm btn-outline-primary flex-grow-1">
+                                            <i class="bi bi-eye"></i> View Details
+                                        </a>
+
+                                        @if (booking.CanCancel)
+                                        {
+                                            <button type="button" 
+                                                    class="btn btn-sm btn-outline-danger flex-grow-1"
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#cancelModal"
+                                                    onclick="setCancelBookingId(@booking.BookingId)">
+                                                <i class="bi bi-x-lg"></i> Cancel
+                                            </button>
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Past Bookings Section -->
+        <div>
+            <h3 class="mb-3">
+                <i class="bi bi-calendar-x" style="color: #6c757d;"></i>
+                Past Bookings
+            </h3>
+
+            @{
+                var pastBookings = Model.Where(b => !b.IsUpcoming).OrderByDescending(b => b.ShowDateTime).ToList();
+            }
+
+            @if (pastBookings.Count == 0)
+            {
+                <div class="alert alert-secondary">
+                    No past bookings yet.
+                </div>
+            }
+            else
+            {
+                <!-- Collapsible Past Bookings -->
+                <button class="btn btn-link p-0 mb-3" type="button" data-bs-toggle="collapse" data-bs-target="#pastBookingsCollapse">
+                    <span>Show @pastBookings.Count Past Booking@(pastBookings.Count != 1 ? "s" : "")</span>
+                    <i class="bi bi-chevron-down"></i>
+                </button>
+
+                <div class="collapse" id="pastBookingsCollapse">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Movie</th>
+                                    <th>Theatre</th>
+                                    <th>Show Date</th>
+                                    <th>Seats</th>
+                                    <th>Amount</th>
+                                    <th>Status</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var booking in pastBookings)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@booking.MovieTitle</strong>
+                                        </td>
+                                        <td>
+                                            @booking.TheatreName<br>
+                                            <small class="text-muted">@booking.ScreenName</small>
+                                        </td>
+                                        <td>
+                                            @booking.ShowDateTime.ToString("MMM dd, yyyy")<br>
+                                            <small class="text-muted">@booking.ShowDateTime.ToString("hh:mm tt")</small>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-secondary">@booking.SeatNumbers</span>
+                                        </td>
+                                        <td>
+                                            <strong>@booking.TotalAmount.ToString("₹ #,##0.00")</strong>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-success">@booking.BookingStatus</span>
+                                        </td>
+                                        <td>
+                                            <a href="@Url.Action("Details", "Booking", new { id = booking.BookingId })" 
+                                               class="btn btn-sm btn-outline-secondary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+<!-- Cancel Booking Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">Cancel Booking</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel this booking?</p>
+                <div class="alert alert-warning" role="alert">
+                    <small>
+                        <i class="bi bi-info-circle"></i>
+                        Cancellation is instant. You will receive a refund notification shortly.
+                    </small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Keep Booking</button>
+                <button type="button" class="btn btn-danger" id="confirmCancelBtn">
+                    <i class="bi bi-x-lg"></i> Yes, Cancel It
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .booking-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        border: 1px solid #e0e0e0;
+    }
+
+    .booking-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .alert-sm {
+        margin-bottom: 0;
+        padding: 0.5rem 0.75rem !important;
+        font-size: 0.875rem;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+</style>
+
+<script>
+    let cancelBookingId = null;
+
+    function setCancelBookingId(bookingId) {
+        cancelBookingId = bookingId;
+    }
+
+    document.getElementById('confirmCancelBtn').addEventListener('click', function() {
+        if (cancelBookingId) {
+            // In a real app, call API to cancel booking
+            fetch(`/api/bookings/${cancelBookingId}/cancel`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    alert('Booking cancelled successfully');
+                    location.reload();
+                } else {
+                    alert('Failed to cancel booking');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while cancelling the booking');
+            });
+        }
+    });
+</script>

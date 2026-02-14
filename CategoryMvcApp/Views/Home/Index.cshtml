@@ -1,0 +1,349 @@
+﻿@model List<MovieCardViewModel>
+
+@{
+    ViewData["Title"] = "Movie Ticket Booking - Home";
+}
+
+<style>
+    .hero-carousel {
+        position: relative;
+        width: 100%;
+        height: 500px;
+        overflow: hidden;
+        border-radius: 12px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+        margin-bottom: 40px;
+    }
+
+    .carousel-slide {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        background-size: cover;
+        background-position: center;
+        opacity: 0;
+        transition: opacity 0.8s ease-in-out;
+        display: flex;
+        align-items: flex-end;
+    }
+
+    .carousel-slide.active {
+        opacity: 1;
+    }
+
+    .carousel-overlay {
+        background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(0,0,0,0.8) 100%);
+        width: 100%;
+        padding: 40px;
+        color: white;
+    }
+
+    .carousel-title {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 42px;
+        font-weight: 800;
+        margin-bottom: 10px;
+    }
+
+    .carousel-desc {
+        font-size: 16px;
+        margin-bottom: 20px;
+        opacity: 0.9;
+    }
+
+    .carousel-btn {
+        background: linear-gradient(90deg, #ff416c, #ff4b2b);
+        color: white;
+        border: none;
+        padding: 12px 30px;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .carousel-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 20px rgba(255, 65, 108, 0.4);
+    }
+
+    .carousel-controls {
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        display: flex;
+        gap: 10px;
+        z-index: 10;
+    }
+
+    .carousel-dot {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.5);
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+
+    .carousel-dot.active {
+        background: white;
+        transform: scale(1.3);
+    }
+
+    .movie-card {
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        border: none;
+        overflow: hidden;
+        border-radius: 12px;
+        background: white;
+    }
+
+    .movie-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+    }
+
+    .movie-poster-container {
+        position: relative;
+        height: 350px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .movie-poster-container img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: transform 0.3s ease;
+    }
+
+    .movie-card:hover .movie-poster-container img {
+        transform: scale(1.05);
+    }
+
+    .movie-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: linear-gradient(90deg, #ff416c, #ff4b2b);
+        color: white;
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        z-index: 5;
+    }
+
+    .movie-rating {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        z-index: 4;
+    }
+
+    .movie-card:hover .movie-rating {
+        opacity: 1;
+    }
+
+    .btn-book-now {
+        background: linear-gradient(90deg, #ff416c, #ff4b2b);
+        color: white;
+        border: none;
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        margin-top: auto;
+    }
+
+    .btn-book-now:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 20px rgba(255, 65, 108, 0.3);
+        color: white;
+        text-decoration: none;
+    }
+
+    .section-title {
+        font-family: 'Montserrat', sans-serif;
+        font-size: 32px;
+        font-weight: 800;
+        margin-bottom: 10px;
+    }
+
+    .section-subtitle {
+        color: #7f8c8d;
+        margin-bottom: 30px;
+    }
+
+    body[data-bs-theme="dark"] .movie-card {
+        background: #343a40;
+        color: white;
+    }
+
+    body[data-bs-theme="dark"] .section-subtitle {
+        color: #adb5bd;
+    }
+
+    @media (max-width: 768px) {
+        .hero-carousel {
+            height: 300px;
+            margin-bottom: 30px;
+        }
+
+        .carousel-title {
+            font-size: 28px;
+        }
+
+        .carousel-overlay {
+            padding: 20px;
+        }
+    }
+</style>
+
+<!-- Hero Carousel Section -->
+<div class="container-fluid px-0">
+    <div class="hero-carousel">
+        @if (Model != null && Model.Any())
+        {
+            @foreach (var movie in Model.Take(4))
+            {
+                <div class="carousel-slide @(Model.IndexOf(movie) == 0 ? "active" : "")" style="background-image: url('@movie.PosterUrl');">
+                    <div class="carousel-overlay">
+                        <div class="carousel-title">@movie.Title</div>
+                        <div class="carousel-desc">@movie.Description?.Substring(0, Math.Min(100, movie.Description?.Length ?? 0))...</div>
+                        <a href="@Url.Action("Details", "Movies", new { id = movie.Id })" class="carousel-btn">Book Now <i class="bi bi-arrow-right ms-2"></i></a>
+                    </div>
+                </div>
+            }
+        }
+        
+        <div class="carousel-controls">
+            @if (Model != null)
+            {
+                @for (int i = 0; i < Math.Min(Model.Count, 4); i++)
+                {
+                    <div class="carousel-dot @(i == 0 ? "active" : "")" data-slide="@i"></div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Movies Section -->
+<div class="container py-5">
+    <div class="row mb-5">
+        <div class="col-lg-12">
+            <h2 class="section-title">🎬 Now Showing</h2>
+            <p class="section-subtitle">Explore the latest blockbusters and book your tickets now</p>
+        </div>
+    </div>
+
+    @if (Model != null && Model.Any())
+    {
+        <div class="row g-4">
+            @foreach (var movie in Model)
+            {
+                <div class="col-lg-3 col-md-6">
+                    <div class="card movie-card h-100 shadow-sm">
+                        <!-- Movie Poster with Badge -->
+                        <div class="movie-poster-container">
+                            @if (!string.IsNullOrEmpty(movie.PosterUrl))
+                            {
+                                <img src="@movie.PosterUrl" alt="@movie.Title" class="card-img-top">
+                                <div class="movie-badge">Now Playing</div>
+                                <div class="movie-rating">
+                                    <i class="bi bi-star-fill"></i> 8.5/10
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="bg-light d-flex align-items-center justify-content-center h-100">
+                                    <span class="text-muted"><i class="bi bi-film me-2"></i>No Image</span>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Movie Info -->
+                        <div class="card-body d-flex flex-column">
+                            <h5 class="card-title mb-2" style="font-family: 'Montserrat', sans-serif; font-weight: 700;">@movie.Title</h5>
+
+                            @if (movie.ReleaseDate != null)
+                            {
+                                <p class="card-text text-muted small mb-3">
+                                    <i class="bi bi-calendar3 me-1"></i>Released: @movie.ReleaseDate.Value.ToString("MMM dd, yyyy")
+                                </p>
+                            }
+
+                            @if (!string.IsNullOrEmpty(movie.Description))
+                            {
+                                <p class="card-text small flex-grow-1">
+                                    @Html.Raw(movie.Description)
+                                </p>
+                            }
+
+                            <hr class="my-2">
+
+                            <!-- Action Button -->
+                            <a href="@Url.Action("Details", "Movies", new { id = movie.Id })" class="btn-book-now">
+                                <i class="bi bi-ticket"></i> View & Book
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <h4 class="alert-heading">No Movies Available</h4>
+            <p>There are currently no movies available for booking. Please check back soon for exciting releases!</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+</div>
+
+<!-- Carousel Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const slides = document.querySelectorAll('.carousel-slide');
+        const dots = document.querySelectorAll('.carousel-dot');
+        let currentSlide = 0;
+
+        function showSlide(n) {
+            slides.forEach(slide => slide.classList.remove('active'));
+            dots.forEach(dot => dot.classList.remove('active'));
+            
+            if (n >= slides.length) currentSlide = 0;
+            if (n < 0) currentSlide = slides.length - 1;
+            
+            slides[currentSlide].classList.add('active');
+            dots[currentSlide].classList.add('active');
+        }
+
+        // Auto advance carousel every 5 seconds
+        setInterval(() => {
+            currentSlide++;
+            showSlide(currentSlide);
+        }, 5000);
+
+        // Dot click handlers
+        dots.forEach((dot, index) => {
+            dot.addEventListener('click', () => {
+                currentSlide = index;
+                showSlide(currentSlide);
+            });
+        });
+
+        showSlide(currentSlide);
+    });
+</script>

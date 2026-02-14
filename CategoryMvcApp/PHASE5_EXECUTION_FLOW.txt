@@ -1,0 +1,769 @@
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 5 EXECUTION FLOW - DETAILED USER JOURNEY
+═══════════════════════════════════════════════════════════════════════════════
+
+This document explains the complete flow of the movie ticket booking system,
+from home page to booking confirmation, including all technical details.
+
+═══════════════════════════════════════════════════════════════════════════════
+STEP-BY-STEP EXECUTION FLOW
+═══════════════════════════════════════════════════════════════════════════════
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ PHASE 1: HOME PAGE & MOVIE BROWSING                                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+USER ACTION:
+  └─ Navigates to http://localhost:5000/
+
+REQUEST:
+  GET / HTTP/1.1
+  (No authentication required)
+
+SERVER PROCESSING (HomeController.Index):
+  1. Load all active movies from database:
+     var movies = _context.Movies.Where(m => m.IsActive).OrderByDescending(m => m.ReleaseDate).ToListAsync();
+
+  2. Map each movie to MovieCardViewModel:
+     ├─ Id (for routing)
+     ├─ Title
+     ├─ PosterUrl (image)
+     ├─ ReleaseDate
+     ├─ Description (truncated to 100 chars)
+     └─ IsActive
+
+  3. Return view with List<MovieCardViewModel>
+
+RESPONSE:
+  Status: 200 OK
+  Content: Views/Home/Index.cshtml rendered with @model List<MovieCardViewModel>
+
+PAGE RENDERING:
+  ├─ Hero section with title "Movie Ticket Booking"
+  ├─ Grid of movie cards (4 columns on desktop)
+  ├─ Each card shows:
+  │   ├─ Poster image
+  │   ├─ Title
+  │   ├─ Release date
+  │   ├─ Description
+  │   └─ "View & Book" button → /Movies/Details/{movieId}
+  └─ CSS animations on hover (card lifts up, image scales)
+
+USER INTERACTION:
+  └─ User clicks "View & Book" button on a movie card
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ PHASE 2: MOVIE DETAILS & SHOWTIME SELECTION                                 ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+USER ACTION:
+  └─ Clicks "View & Book" on a movie (e.g., movie ID = 5)
+
+REQUEST:
+  GET /Movies/Details/5 HTTP/1.1
+  (No authentication required)
+
+SERVER PROCESSING (MoviesController.Details):
+  1. Load movie with all related shows:
+     var movie = _context.Movies
+       .Include(m => m.Shows)
+         .ThenInclude(s => s.Screen)
+           .ThenInclude(sc => sc.Theatre)
+       .Include(m => m.Shows)
+         .ThenInclude(s => s.SeatPrices)
+       .FirstOrDefaultAsync(m => m.Id == 5 && m.IsActive);
+
+  2. Validate movie exists (else 404 Not Found)
+
+  3. Map to MovieDetailViewModel:
+     ├─ Movie basic info: Id, Title, Description, DurationMinutes, ReleaseDate, PosterUrl, TrailerUrl
+     └─ ShowTimes: List<ShowListItemViewModel> (filtered & mapped)
+
+  4. Filter and map shows:
+     shows.Where(s => s.IsActive && s.StartDateTime > DateTime.UtcNow)
+           .OrderBy(s => s.StartDateTime)
+           .Select(s => new ShowListItemViewModel {
+               ShowId: 5,
+               StartDateTime: 2026-02-07 14:30:00,
+               EndDateTime: 2026-02-07 17:00:00,
+               ScreenName: "Screen 5",
+               TheatreName: "PVR Cinemas",
+               City: "Mumbai",
+               PriceRange: "₹150 – ₹300"
+           })
+
+  5. Return View(movieDetailViewModel)
+
+RESPONSE:
+  Status: 200 OK
+  Content: Views/Movies/Details.cshtml rendered with @model MovieDetailViewModel
+
+PAGE RENDERING:
+  ├─ Left column (col-lg-4):
+  │   ├─ Movie poster (large)
+  │   ├─ Title, duration, release date badges
+  │   ├─ Status badge (Active/Inactive)
+  │   └─ "Watch Trailer" link (if available)
+  │
+  └─ Right column (col-lg-8):
+      ├─ Movie description (full text)
+      ├─ "Available Showtimes" heading
+      └─ Showtime cards (in 2-column grid):
+          ├─ Theatre name & screen
+          ├─ Date (friendly format): "Fri, Feb 07"
+          ├─ Time (large): "2:30 PM"
+          ├─ Price range badge: "₹150 – ₹300"
+          └─ "Book Tickets" button → /Booking/SelectSeats/{showId}
+
+USER INTERACTION:
+  └─ User clicks "Book Tickets" on a showtime (e.g., show ID = 15)
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ PHASE 3: SEAT SELECTION (INTERACTIVE WITH AJAX)                             ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+USER ACTION:
+  └─ Clicks "Book Tickets" for show ID 15
+
+REQUEST:
+  GET /Booking/SelectSeats/15 HTTP/1.1
+  Authorization: Bearer {token}  (User must be logged in)
+
+SERVER PROCESSING (BookingController.SelectSeats):
+  1. Verify user is authenticated (via [Authorize] attribute)
+
+  2. Load show with all related data:
+     var show = _context.Shows
+       .Include(s => s.Movie)
+       .Include(s => s.Screen)
+         .ThenInclude(s => s.Theatre)
+       .Include(s => s.SeatPrices)
+       .Include(s => s.BookedSeats.Where(bs => bs.IsActive))  // Only active bookings
+       .FirstOrDefaultAsync(s => s.Id == 15 && s.IsActive);
+
+  3. Validate show exists and not started:
+     if (show == null) → 404 Not Found
+     if (show.StartDateTime <= DateTime.UtcNow) → 400 Bad Request
+
+  4. Map to SeatSelectionViewModel:
+     ├─ ShowId: 15 (for AJAX POST)
+     ├─ MovieTitle: "Avatar 2"
+     ├─ PosterUrl: "http://..."
+     ├─ TheatreName: "PVR Cinemas"
+     ├─ ScreenName: "Screen 5"
+     ├─ StartDateTime: 2026-02-07 14:30:00
+     ├─ DurationMinutes: 162
+     ├─ Prices: List of {Category: "Premium", Price: 300}, {Category: "Regular", Price: 200}, etc.
+     ├─ BookedSeats: ["A1", "A2", "B5", ...] (list of already-booked seat numbers)
+     ├─ LayoutJson: "{...}" (theatre seat layout structure)
+     ├─ Rows: 10
+     └─ Columns: 15
+
+  5. Return View(seatSelectionViewModel)
+
+RESPONSE:
+  Status: 200 OK
+  Content: Views/Booking/SelectSeats.cshtml
+
+PAGE RENDERING & INITIALIZATION:
+  ├─ Header:
+  │   ├─ Movie title: "Avatar 2"
+  │   ├─ Theatre: "PVR Cinemas, Screen 5"
+  │   ├─ Show time: "Friday, February 07, 2026 - 2:30 PM"
+  │   └─ Poster image
+  │
+  ├─ Main content (two-column layout):
+  │   ├─ Left column: Seat grid
+  │   │   └─ Div id="seatGrid" (empty initially, will be populated by jQuery)
+  │   │
+  │   └─ Right column (sticky sidebar):
+  │       ├─ Legend:
+  │       │   ├─ Green box → Available seat
+  │       │   ├─ Dark green box → Selected seat
+  │       │   └─ Red box → Booked seat
+  │       │
+  │       ├─ Pricing table:
+  │       │   ├─ Premium: ₹300
+  │       │   ├─ Regular: ₹200
+  │       │   └─ Economy: ₹150
+  │       │
+  │       ├─ Selected seats section:
+  │       │   ├─ "Seats selected: 0"
+  │       │   └─ List of selected seats (empty initially)
+  │       │
+  │       ├─ Total amount: ₹0.00 (updates in real-time)
+  │       │
+  │       └─ "Reserve Seats" button (disabled initially)
+  │
+  └─ JavaScript initialization (jQuery):
+
+      $(document).ready(function() {
+          // 1. Build price map from @Model.Prices
+          const priceMap = {
+              'Premium': 300,
+              'Regular': 200,
+              'Economy': 150
+          };
+
+          // 2. Initialize tracking variables
+          const selectedSeats = [];
+          const bookedSeats = new Set(@Json.Serialize(Model.BookedSeats));
+          // bookedSeats = {"A1", "A2", "B5", ...}
+
+          // 3. Generate seat grid (10 rows × 15 columns)
+          initializeSeatGrid();  // Creates HTML structure
+
+          // 4. Load latest booked seats from server (AJAX)
+          loadSeatStatus();  // Calls $.getJSON
+
+          // 5. Attach event listeners
+          // - Click handlers on seats
+          // - Reserve button click
+          // - Remove seat buttons
+      });
+
+
+SEAT GRID GENERATION (jQuery):
+  Loops through:
+    Rows: A, B, C, D, E, F, G, H, I, J (10 rows)
+    Columns: 1-15 (15 columns)
+
+  Creates:
+    <div class="seat-row">
+        <div class="seat available" data-seat="A1" data-category="Premium"></div>
+        <div class="seat available" data-seat="A2" data-category="Premium"></div>
+        ...
+        <div class="seat booked" data-seat="A15" data-category="Economy"></div>  <!-- Already booked -->
+    </div>
+    ... (repeat for each row)
+
+  Styling:
+    .seat.available {
+        background: #28a745 (green);
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+    .seat.available:hover {
+        transform: scale(1.1);
+        box-shadow: 0 0 8px rgba(0,0,0,0.3);
+    }
+
+    .seat.selected {
+        background: #1e7e34 (dark green);
+        border: 2px solid #17a2b8;
+    }
+
+    .seat.booked {
+        background: #dc3545 (red);
+        cursor: not-allowed;
+        opacity: 0.6;
+        pointer-events: none;
+    }
+
+
+AJAX CALL 1: Load Booked Seats (On page load)
+  $.getJSON('/Booking/GetSeatStatus/15', function(data) {
+      if (data.success) {
+          // data = {
+          //     success: true,
+          //     bookedSeats: ["A1", "A2", "B5"],
+          //     categories: { Premium: 300, Regular: 200, Economy: 150 },
+          //     message: "Seat status loaded successfully"
+          // }
+
+          data.bookedSeats.forEach(seat => {
+              $(`[data-seat="${seat}"]`)
+                  .removeClass('available')
+                  .addClass('booked');
+          });
+      }
+  });
+
+
+USER INTERACTION: Seat Selection
+  ┌─ User clicks available seat "A3"
+  │
+  ├─ jQuery click handler fires:
+  │  ├─ Get seat number: "A3"
+  │  ├─ Add class "selected" → seat turns dark green
+  │  ├─ Push "A3" to selectedSeats array: ["A3"]
+  │  └─ Call updateSummary()
+  │
+  └─ updateSummary() function:
+     ├─ Update "Seats selected" count: "1 seat"
+     ├─ Calculate total price:
+     │  └─ $('[data-seat="A3"]').attr('data-category') → "Premium"
+     │  └─ priceMap['Premium'] → 300
+     │  └─ Set totalPrice = 300
+     ├─ Update total display: ₹300.00
+     ├─ Rebuild selected seats list HTML:
+     │  └─ "<span class='seat-tag'>A3 <button onclick='removeSeat("A3")'>×</button></span>"
+     └─ Enable "Reserve Seats" button (was disabled, now enabled)
+
+  [User clicks another seat "A4"]
+  ├─ Similar flow
+  ├─ selectedSeats = ["A3", "A4"]
+  ├─ Total = 300 + 300 = 600
+  └─ Seats display: "2 seats: A3, A4"
+
+  [User clicks selected seat "A3" (deselect)]
+  ├─ Seat turns back to green (removeClass "selected")
+  ├─ Remove "A3" from selectedSeats: ["A4"]
+  ├─ Update: 1 seat, ₹300.00
+  └─ Display: "A4"
+
+  [User selects 3 seats total: "A1", "A2", "B3"]
+  └─ Interface shows:
+     ├─ "3 seats selected"
+     ├─ Seats: A1, A2, B3
+     ├─ A1: Premium (₹300) + A2: Premium (₹300) + B3: Regular (₹200)
+     └─ Total: ₹800.00
+     └─ "Reserve Seats" button is enabled
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ PHASE 4: BOOKING SUBMISSION (AJAX POST WITH DATABASE TRANSACTION)           ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+USER ACTION:
+  └─ Clicks "Reserve Seats" button (with 3 seats selected)
+
+JAVASCRIPT EXECUTION:
+  $('#reserveButton').click(function() {
+      // 1. Build request object
+      const request = {
+          showId: 15,
+          seatNumbers: ["A1", "A2", "B3"]
+      };
+
+      // 2. Get antiforgery token from hidden input
+      const token = $('input[name="__RequestVerificationToken"]').val();
+      // token = "CfDJ8..." (auto-generated by @Html.AntiForgeryToken())
+
+      // 3. Perform AJAX POST with JSON
+      $.ajax({
+          url: '/Booking/ReserveSeats',          // Server endpoint
+          type: 'POST',                          // HTTP method
+          contentType: 'application/json; charset=utf-8',  // Request content type
+          dataType: 'json',                      // Expected response format
+          headers: {
+              'RequestVerificationToken': token  // CSRF protection
+          },
+          data: JSON.stringify(request),          // Serialize request to JSON
+          success: function(response) {
+              // Handle success response
+              if (response.success) {
+                  // Redirect to confirmation page
+                  window.location.href = '/Booking/Confirmation/' + response.bookingId;
+              } else {
+                  // Show error message
+                  alert('Booking failed: ' + response.message);
+              }
+          },
+          error: function(xhr, status, error) {
+              // Handle network error or 500 response
+              alert('Error: ' + error);
+          }
+      });
+  });
+
+HTTP REQUEST SENT:
+  POST /Booking/ReserveSeats HTTP/1.1
+  Host: localhost:5000
+  Content-Type: application/json; charset=utf-8
+  Authorization: Bearer {token}
+  RequestVerificationToken: CfDJ8...
+
+  {
+      "showId": 15,
+      "seatNumbers": ["A1", "A2", "B3"]
+  }
+
+
+SERVER PROCESSING (BookingController.ReserveSeats):
+  
+  Entry:
+    [HttpPost("ReserveSeats")]
+    [Authorize]                    // Requires logged-in user
+    [ValidateAntiForgeryToken]     // Validates token from header
+    public async Task<IActionResult> ReserveSeats([FromBody] ReserveSeatsRequest request)
+
+  Step 1: Validate request format
+    ├─ Check: request != null
+    ├─ Check: request.ShowId > 0
+    ├─ Check: request.SeatNumbers != null && count > 0
+    └─ If failed → return Json({ success: false, message: "Invalid request" })
+
+  Step 2: Get authenticated user ID
+    ├─ userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+    ├─ Example: userId = "f7c5d1e8-2a4b-4c6d-8e9f-1a2b3c4d5e6f"
+    └─ If empty → return Json({ success: false, message: "Authentication required" })
+
+  Step 3: Load show data
+    var show = _context.Shows
+        .Include(s => s.Movie)
+        .Include(s => s.Screen)
+        .Include(s => s.SeatPrices)
+        .Include(s => s.BookedSeats.Where(bs => bs.IsActive))  // CRITICAL: Only active
+        .FirstOrDefaultAsync(s => s.Id == 15 && s.IsActive);
+
+    └─ If not found → return Json({ success: false, message: "Show not found" })
+
+  Step 4: Validate show is available
+    if (show.StartDateTime <= DateTime.UtcNow)
+        → return Json({ success: false, message: "Show has already started" })
+
+  Step 5: CRITICAL - Check seat availability (RACE CONDITION PREVENTION)
+    var alreadyBooked = show.BookedSeats
+        .Where(bs => ["A1", "A2", "B3"].Contains(bs.SeatNumber))
+        .Select(bs => bs.SeatNumber)
+        .ToList();
+    // alreadyBooked = [] (empty, none are taken)
+
+    If any seats in alreadyBooked:
+        → return Json({
+            success: false,
+            message: "Some seats are no longer available",
+            errorDetails: "Seats A1, A2 have been booked by another user"
+        })
+    (This prevents race condition where seats were booked after page load)
+
+  Step 6: START DATABASE TRANSACTION
+    using (var transaction = await _context.Database.BeginTransactionAsync())
+    {
+        try
+        {
+            // All database operations below are atomic:
+            // Either ALL succeed and commit, or ALL rollback on any error
+
+            Step 6a: Create Booking record
+              var booking = new Booking
+              {
+                  UserId = "f7c5d1e8-2a4b-4c6d-8e9f-1a2b3c4d5e6f",
+                  ShowId = 15,
+                  BookingDateTime = DateTime.UtcNow,  // 2026-02-07 10:30:45.1234567Z
+                  Status = BookingStatus.Confirmed,
+                  IsActive = true,
+                  TotalAmount = 0  // Will update after calculating seat prices
+              };
+
+              _context.Bookings.Add(booking);
+              await _context.SaveChangesAsync();
+              // Booking now has Id (auto-generated: 42)
+
+            Step 6b: Create BookedSeat records
+              For each seatNumber in ["A1", "A2", "B3"]:
+
+                Iteration 1: "A1"
+                  ├─ category = DetermineSeatCategory("A1", layoutJson)
+                  │  └─ A1[0] = 'A' → "Premium"
+                  ├─ seatPrice = show.SeatPrices.FirstOrDefault(p => p.Category == "Premium")
+                  │  └─ seatPrice.Price = 300
+                  ├─ Create BookedSeat:
+                  │   {
+                  │       BookingId: 42,
+                  │       ShowId: 15,
+                  │       SeatNumber: "A1",
+                  │       Category: "Premium",
+                  │       Price: 300,
+                  │       IsActive: true
+                  │   }
+                  ├─ _context.BookedSeats.Add(bookedSeat)
+                  └─ totalAmount += 300  // totalAmount = 300
+
+                Iteration 2: "A2"
+                  ├─ category = "Premium"
+                  ├─ price = 300
+                  └─ totalAmount += 300  // totalAmount = 600
+
+                Iteration 3: "B3"
+                  ├─ category = DetermineSeatCategory("B3", layoutJson)
+                  │  └─ B3[0] = 'B' → "Regular"
+                  ├─ price = 200
+                  └─ totalAmount += 200  // totalAmount = 800
+
+            Step 6c: Update Booking total
+              booking.TotalAmount = 800
+              await _context.SaveChangesAsync()
+
+            Step 6d: COMMIT TRANSACTION
+              await transaction.CommitAsync()
+              // All changes persisted to database atomically
+
+            Step 6e: Return success response
+              return Json(new {
+                  success = true,
+                  message = "Booking confirmed successfully!",
+                  bookingId = 42
+              });
+        }
+        catch (Exception ex)
+        {
+            // On any error:
+            await transaction.RollbackAsync()
+            // All changes since BeginTransactionAsync() are rolled back
+
+            return Json(new {
+                success = false,
+                message = "Booking failed. Please try again.",
+                errorDetails = ex.Message
+            });
+        }
+    }
+
+
+HTTP RESPONSE RECEIVED:
+  Status: 200 OK
+  Content-Type: application/json
+
+  {
+      "success": true,
+      "message": "Booking confirmed successfully!",
+      "bookingId": 42
+  }
+
+
+JAVASCRIPT SUCCESS CALLBACK:
+  // response.success = true
+  // response.bookingId = 42
+
+  if (response.success) {
+      window.location.href = '/Booking/Confirmation/42';
+      // Browser navigates to confirmation page
+  }
+
+  [Page transitions to confirmation page]
+
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║ PHASE 5: BOOKING CONFIRMATION DISPLAY                                       ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+USER ACTION:
+  └─ Browser navigates to /Booking/Confirmation/42
+
+REQUEST:
+  GET /Booking/Confirmation/42 HTTP/1.1
+  Authorization: Bearer {token}  (Must be same user who created booking)
+
+SERVER PROCESSING (BookingController.Confirmation):
+  
+  Step 1: Verify authentication
+    [Authorize] attribute checks: User is logged in
+    └─ userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+    └─ userId = "f7c5d1e8-2a4b-4c6d-8e9f-1a2b3c4d5e6f"
+
+  Step 2: Load booking with all related data
+    var booking = _context.Bookings
+        .Include(b => b.User)
+        .Include(b => b.Show)
+            .ThenInclude(s => s.Movie)
+        .Include(b => b.Show)
+            .ThenInclude(s => s.Screen)
+                .ThenInclude(sc => sc.Theatre)
+        .Include(b => b.BookedSeats.Where(bs => bs.IsActive))
+        .FirstOrDefaultAsync(b => b.Id == 42 && b.IsActive);
+
+  Step 3: Validate booking exists
+    if (booking == null) → 404 Not Found
+
+  Step 4: SECURITY - Verify user ownership
+    if (booking.UserId != userId)
+        → return Forbid()  // 403 Forbidden
+    // Prevents User B from viewing User A's booking
+
+  Step 5: Map to BookingConfirmationViewModel
+    ├─ BookingId: 42
+    ├─ ConfirmationNumber: "BOOK-00000042"
+    ├─ MovieTitle: "Avatar 2"
+    ├─ TheatreName: "PVR Cinemas"
+    ├─ ScreenName: "Screen 5"
+    ├─ ShowTime: 2026-02-07 14:30:00
+    ├─ BookingDateTime: 2026-02-07 10:30:45
+    ├─ Status: "Confirmed"
+    ├─ TotalAmount: 800
+    ├─ Notes: null (or user notes if any)
+    └─ Seats: List<BookedSeatDetailViewModel> ordered by SeatNumber
+        ├─ { SeatNumber: "A1", Category: "Premium", Price: 300 }
+        ├─ { SeatNumber: "A2", Category: "Premium", Price: 300 }
+        └─ { SeatNumber: "B3", Category: "Regular", Price: 200 }
+
+  Step 6: Return View(viewModel)
+
+RESPONSE:
+  Status: 200 OK
+  Content: Views/Booking/Confirmation.cshtml
+
+PAGE RENDERING:
+  ├─ Success Alert:
+  │   └─ "✅ Booking Confirmed!"
+  │
+  ├─ Header:
+  │   ├─ "🎬 Booking Confirmation"
+  │   ├─ Confirmation #: BOOK-00000042
+  │   └─ Booked on: February 07, 2026 10:30 AM
+  │
+  ├─ Action Buttons (top right):
+  │   ├─ "Print Ticket" → window.print()
+  │   └─ "Back to Home" → /
+  │
+  ├─ Main Content (col-lg-8):
+  │   ├─ Movie Details Card:
+  │   │   ├─ Poster (150px height)
+  │   │   ├─ Title: Avatar 2
+  │   │   ├─ Theatre: PVR Cinemas | Screen 5
+  │   │   ├─ Show Time: Friday, Feb 7, 2026 - 2:30 PM
+  │   │   └─ Status: Confirmed ✓
+  │   │
+  │   ├─ Booked Seats Card:
+  │   │   ├─ Grid of seat cards (3 columns):
+  │   │   │   ├─ Card 1:
+  │   │   │   │   ├─ Large blue "A1"
+  │   │   │   │   ├─ "Premium" (gray text)
+  │   │   │   │   └─ "₹300" (green)
+  │   │   │   ├─ Card 2: A2
+  │   │   │   └─ Card 3: B3
+  │   │   └─ Total seats: 3
+  │   │
+  │   └─ Notes Card (if notes exist):
+  │       └─ User notes about booking
+  │
+  ├─ Sidebar (col-lg-4, sticky on desktop):
+  │   ├─ Booking Summary:
+  │   │   ├─ "3 Seats booked"
+  │   │   └─ Seat numbers: A1, A2, B3
+  │   │
+  │   ├─ Price Breakdown:
+  │   │   ├─ Premium (2 seats):
+  │   │   │   └─ 2 × ₹300 = ₹600
+  │   │   ├─ Regular (1 seat):
+  │   │   │   └─ 1 × ₹200 = ₹200
+  │   │   └─ Subtotal: ₹800
+  │   │
+  │   ├─ Total Amount:
+  │   │   └─ Large green heading "₹800.00"
+  │   │
+  │   ├─ Booking Details:
+  │   │   ├─ Booking ID: 42
+  │   │   └─ Confirmation #: BOOK-00000042
+  │   │
+  │   ├─ Action Buttons:
+  │   │   ├─ "Book More Tickets" → / (home)
+  │   │   └─ "View Booking History" → /Account/Profile
+  │   │
+  │   └─ Important Information:
+  │       ├─ Arrive 15 minutes before show
+  │       ├─ Your seats are reserved
+  │       ├─ Present confirmation at counter
+  │       ├─ Cancellation allowed within 24 hours
+  │       └─ Confirmation email has been sent
+  │
+  └─ Print Styles (@media print):
+      ├─ Hide: buttons, alerts, navigation
+      ├─ Optimize: fonts, colors for B&W printing
+      └─ Format: A4 page size, clean layout
+
+
+USER FINAL ACTIONS:
+  Option 1: Print Ticket
+    └─ Click "Print Ticket" button
+    └─ Browser print dialog opens
+    └─ User prints confirmation page
+    └─ Shows at theatre counter with printed ticket
+
+  Option 2: Book More Tickets
+    └─ Click "Book More Tickets"
+    └─ Redirect to /
+    └─ View movie grid again
+    └─ Can book additional tickets
+
+  Option 3: View Booking History
+    └─ Click "View Booking History"
+    └─ Redirect to /Account/Profile
+    └─ See all past bookings
+
+═══════════════════════════════════════════════════════════════════════════════
+KEY SAFETY & SECURITY FEATURES IN FLOW
+═════════════════════════════════════════════════════════════════════════════════
+
+1. RACE CONDITION PREVENTION:
+   ├─ Issue: Two users book same seat simultaneously
+   ├─ Solution 1: Availability check before transaction
+   │              └─ Code checks BookedSeats before creating new booking
+   ├─ Solution 2: Database-level protection
+   │              └─ UNIQUE INDEX on BookedSeat(ShowId, SeatNumber)
+   │              └─ If duplicate attempted, SQL constraint violation → rollback
+   └─ Solution 3: Transaction atomicity
+                 └─ All BookedSeats created in same transaction
+                 └─ Either all succeed or all fail
+
+2. CSRF PROTECTION (Cross-Site Request Forgery):
+   ├─ Issue: Attacker tricks user into booking from malicious site
+   ├─ Solution: Antiforgery token
+   │   ├─ @Html.AntiForgeryToken() in form → hidden input field
+   │   ├─ jQuery reads token and includes in AJAX header
+   │   ├─ [ValidateAntiForgeryToken] on server validates token
+   │   └─ Request without valid token → 400 Bad Request
+
+3. USER AUTHORIZATION:
+   ├─ Issue: Unauthorized users accessing booking endpoints
+   ├─ Solution 1: [Authorize] on controller
+   │              └─ Unauthenticated requests rejected
+   ├─ Solution 2: Ownership verification
+   │              └─ Confirmation action checks: booking.UserId == currentUserId
+   │              └─ If mismatch → 403 Forbid
+   └─ Solution 3: GetSeatStatus is [AllowAnonymous]
+                 └─ Safe to expose (no personal data, no write access)
+
+4. TRANSACTION SAFETY:
+   ├─ Issue: Partial booking if error occurs during seat creation
+   ├─ Solution: Database transaction (ACID guarantee)
+   │   ├─ Atomicity: All BookedSeats created or none
+   │   ├─ Consistency: Booking.TotalAmount matches actual seats × prices
+   │   ├─ Isolation: Other users don't see incomplete booking
+   │   └─ Durability: Once committed, changes survive failures
+   └─ If error in transaction:
+       └─ transaction.RollbackAsync() cancels all changes
+       └─ No partial booking in database
+
+5. INPUT VALIDATION:
+   ├─ Server validates: ShowId > 0, SeatNumbers not empty
+   ├─ Server validates: Show exists and is active
+   ├─ Server validates: Show start time is in future
+   └─ Server rejects invalid requests with 400 Bad Request
+
+6. LOGGING & AUDITING:
+   ├─ All actions logged: _logger.LogInformation(...)
+   ├─ Suspicious access logged: _logger.LogWarning(...)
+   ├─ Errors logged: _logger.LogError(...)
+   └─ Useful for debugging and security audits
+
+═════════════════════════════════════════════════════════════════════════════════
+SUMMARY
+═════════════════════════════════════════════════════════════════════════════════
+
+Complete flow from user browsing movies to confirmed booking:
+
+  1. HOME → View movie grid with MovieCardViewModel
+  2. DETAILS → View showtimes with nested ShowListItemViewModel
+  3. SELECT SEATS → Interactive seat grid with jQuery + AJAX
+     └─ Real-time availability checks ($.getJSON)
+     └─ Dynamic price calculation
+  4. RESERVE → AJAX POST with database transaction
+     └─ Atomicity: All-or-nothing
+     └─ Safety: Race condition prevention
+     └─ Security: Antiforgery token, user ownership
+  5. CONFIRMATION → Display booking with all details
+     └─ Ownership verified (Forbid if not owner)
+     └─ Print-friendly layout
+
+All endpoints protected appropriately:
+  ✓ [Authorize] where authentication required
+  ✓ [AllowAnonymous] where needed for UX (GetSeatStatus)
+  ✓ [ValidateAntiForgeryToken] for all mutating operations (ReserveSeats)
+  ✓ Ownership checks for sensitive data (Confirmation)
+
+═════════════════════════════════════════════════════════════════════════════════

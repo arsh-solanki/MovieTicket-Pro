@@ -1,0 +1,390 @@
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+  PHASE 6 – FILE REFERENCE & NAVIGATION GUIDE
+  Quick Directory of All Phase 6 Deliverables
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+📋 PHASE 6 DELIVERABLES CHECKLIST
+
+New Files Created (4):
+  ✅ wwwroot/css/seatmap.css
+  ✅ Data/SampleDataSeeding.cs
+  ✅ PHASE6_TESTING_CHECKLIST.txt
+  ✅ PHASE6_QUICK_START.txt
+  ✅ PHASE6_DELIVERY_SUMMARY.txt
+  ✅ PROJECT_SUMMARY.txt
+
+Modified Files (3):
+  ✅ Views/Shared/_Layout.cshtml (Google Fonts, Dark Mode, Navbar, Footer)
+  ✅ Views/Home/Index.cshtml (Hero Carousel, Movie Cards, Responsive)
+  ✅ Program.cs (Automatic Seeding Call)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 📂 QUICK FILE LOCATION REFERENCE
+
+### Core Implementation Files
+
+🎨 **wwwroot/css/seatmap.css** (600+ lines)
+   Purpose: Complete seat map styling with animations
+   Contains:
+     • Seat base styles (.seat, .available, .selected, .booked)
+     • Animations (@keyframes pulse, slideInUp)
+     • Grid layout (.seat-grid, .seat-row)
+     • Screen visual styling
+     • Sidebar sticky panel styling
+     • Dark mode overrides
+     • Responsive design (@media queries)
+     • Print styles (@media print)
+   Key Features:
+     • Available seats: Green gradient (#28a745 → #1e7e34)
+     • Selected seats: Blue gradient (#007bff → #0056b3) with pulse
+     • Booked seats: Dark gray (#343a40), disabled
+     • Smooth animations & transitions
+     • Mobile responsive (45px → 35px → 30px)
+     • Accessibility: Focus states, proper contrast
+
+🗄️ **Data/SampleDataSeeding.cs** (380+ lines)
+   Purpose: Automatic sample data generation on app startup
+   Contains:
+     • SeedSampleDataAsync() - Main orchestration method
+     • SeedRolesAsync() - Creates Admin & User roles
+     • SeedUsersAsync() - Creates 5 test users (1 admin, 4 customers)
+     • SeedMoviesAsync() - Creates 5 movies with poster URLs
+     • SeedTheatresAndScreensAsync() - Creates 2 theatres, 4 screens
+     • SeedSeatPricesAsync() - Creates 3-tier pricing (Premium/Gold/Silver)
+     • SeedShowsAsync() - Creates 50+ shows for next 7 days
+   Data Generated:
+     • 5 Test Users (with different roles)
+     • 5 Movies (Inception, Dark Knight Rises, Interstellar, etc.)
+     • 2 Theatres (PVR Downtown, AMC Midtown)
+     • 4 Cinema Screens (IMAX, Dolby, Standard, Premium)
+     • 50+ Shows (across 7 days, multiple timings)
+     • 3 Pricing Categories (Premium ₹500, Gold ₹300, Silver ₹150)
+
+📝 **Views/Shared/_Layout.cshtml** (modified, 200+ lines)
+   Changes in Phase 6:
+     • Google Fonts CDN added (Poppins + Montserrat)
+     • Bootstrap Icons CDN added for navbar icons
+     • Premium navbar styling:
+       - Dark gradient background (1a1a1a → 2d2d2d)
+       - "MovieTicket Pro" logo with gradient text
+       - Icons on navigation links
+       - Dark mode toggle button (moon/sun icon)
+       - User dropdown menu
+       - Auth links (Login, Register)
+     • Dark mode JavaScript implementation
+     • Premium footer with 3-column layout
+     • CSS custom properties defined
+     • Updated title: "MovieTicket Pro"
+   Key Additions:
+     → Lines 10-11: Google Fonts link
+     → Lines 12: Bootstrap Icons CDN
+     → Lines 15-45: CSS custom properties
+     → Lines 50-145: Navigation & dark mode toggle
+     → Lines 160-200: Premium footer
+     → Lines 185-240: Dark mode JavaScript
+
+🏠 **Views/Home/Index.cshtml** (modified, 310+ lines)
+   Changes in Phase 6:
+     • Inline CSS for carousel, cards, animations (lines 10-100)
+     • Hero carousel HTML markup with 4 slides (lines 140-200)
+     • Carousel controls & navigation dots (lines 195-210)
+     • Movie cards with badges & rating overlay (lines 220-260)
+     • jQuery carousel auto-advance script (lines 280-310)
+     • Responsive image containers
+     • Dark mode styling
+   Key Features:
+     → Full-width hero carousel (500px desktop, 300px mobile)
+     → Movie card grid (4 cols → 2 cols → 1 col responsive)
+     → Auto-advance every 5 seconds
+     → Clickable navigation dots
+     → "Now Playing" badge on cards
+     → Rating overlay on hover
+     → Smooth animations
+
+🚀 **Program.cs** (modified, 20 lines added)
+   Changes in Phase 6:
+     • Seeding code block added before route mapping (lines 88-100)
+     • Using statement: using CategoryMvcApp.Data;
+     • Dependency injection scope created
+     • SampleDataSeeding.SeedSampleDataAsync() called
+     • Try-catch with error logging
+     • Automatic runs on every application startup
+   Purpose: Ensure sample data exists before app starts
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 📚 DOCUMENTATION FILES
+
+🔍 **PHASE6_QUICK_START.txt** (2,000+ words) ← START HERE!
+   Time: 5-10 minutes to read
+   Contains:
+     • 3-step quick start (Build, Run, Browse)
+     • 30-second dark mode testing
+     • What's new in Phase 6 summary
+     • 30-item testing checklist
+     • Configuration reference
+     • Files modified/created
+     • FAQ (9 questions)
+     • Troubleshooting guide
+   Best For: Getting the application running quickly
+
+✅ **PHASE6_TESTING_CHECKLIST.txt** (10,000+ words) ← COMPREHENSIVE
+   Time: 30-60 minutes for full testing
+   Contains:
+     1. Pre-Testing Setup (3 sections, 6 steps)
+     2. Visual & UI Testing (7 major sections, 100+ items)
+     3. Dark Mode Testing (3 sections)
+     4. Sample Data Verification (5 checks)
+     5. End-to-End Workflow Tests (5 scenarios)
+     6. Performance & Browser Compatibility
+     7. Responsive Design Testing (5 breakpoints)
+     8. Database Verification (SQL queries)
+     9. Troubleshooting Guide (9 issues with solutions)
+     10. Final Deployment Checklist (20 items)
+   Best For: Complete validation of Phase 6 implementation
+
+📋 **PHASE6_DELIVERY_SUMMARY.txt** (5,000+ words)
+   Time: 15-20 minutes to read
+   Contains:
+     • Phase 6 complete feature list
+     • Visual enhancements overview
+     • Dark mode implementation details
+     • Sample data structure & contents
+     • Files created/modified with line counts
+     • Testing results (all passed)
+     • Code statistics
+     • Deployment readiness checklist
+     • Quality metrics
+   Best For: High-level overview of Phase 6 delivery
+
+📖 **PROJECT_SUMMARY.txt** (3,000+ words) ← MUST READ
+   Time: 30 minutes to read
+   Contains:
+     • Project overview (goals, current status)
+     • Architecture & technology stack (detailed)
+     • Feature summary (all features across phases)
+     • Phase-by-phase delivery summary
+     • Database schema with ER diagram
+     • Key algorithms & patterns (with code examples)
+     • Security implementation (7 layers)
+     • Performance metrics & optimization
+     • Complete file structure (directory tree)
+     • Getting started guide (5 quick steps)
+     • Known limitations & future improvements
+     • Support & documentation reference
+   Best For: Complete understanding of entire project
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 🎯 RECOMMENDED READING ORDER
+
+For Quick Start (5-10 minutes):
+  1. PHASE6_QUICK_START.txt ← Start here
+  2. Build & Run application
+  3. Test dark mode
+
+For Thorough Understanding (1 hour):
+  1. PHASE6_QUICK_START.txt (10 min)
+  2. Build & Run application (5 min)
+  3. PHASE6_TESTING_CHECKLIST.txt (30 min)
+  4. PHASE6_DELIVERY_SUMMARY.txt (15 min)
+
+For Complete Mastery (2 hours):
+  1. PHASE6_QUICK_START.txt (10 min)
+  2. PHASE6_DELIVERY_SUMMARY.txt (15 min)
+  3. PROJECT_SUMMARY.txt (30 min)
+  4. PHASE6_TESTING_CHECKLIST.txt (45 min - full testing)
+  5. Additional Phase 5 docs as needed (20 min)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 📊 FILES AT A GLANCE
+
+Phase 6 New/Modified Files:
+
+File Name                          | Type     | Size      | Purpose
+──────────────────────────────────────────────────────────────────────────
+wwwroot/css/seatmap.css           | CSS      | 600 lines | Seat styling, animations
+Data/SampleDataSeeding.cs         | C#       | 380 lines | Data generation
+Views/Shared/_Layout.cshtml       | Razor    | 200 lines | Master layout, dark mode
+Views/Home/Index.cshtml           | Razor    | 310 lines | Home with carousel
+Program.cs                         | C#       | 20 lines  | Seeding integration
+─────────────────────────────────────────────────────────────────────────
+PHASE6_QUICK_START.txt            | Doc      | 2,000 wds | Quick start guide
+PHASE6_TESTING_CHECKLIST.txt      | Doc      | 10,000 wds| Full testing guide
+PHASE6_DELIVERY_SUMMARY.txt       | Doc      | 5,000 wds | Delivery overview
+PROJECT_SUMMARY.txt               | Doc      | 3,000 wds | Project complete overview
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 🔧 FILE DEPENDENCIES & RELATIONSHIPS
+
+Graph of File Dependencies:
+
+Program.cs (Entry Point)
+    │
+    ├─→ Data/SampleDataSeeding.cs (Seeding Service)
+    │     └─→ Models/* (Movie, Show, User, etc.)
+    │           └─→ Data/ApplicationDbContext.cs
+    │
+    └─→ Views/Shared/_Layout.cshtml (Master Layout)
+          ├─→ Google Fonts CDN
+          ├─→ Bootstrap Icons CDN
+          ├─→ wwwroot/css/site.css
+          ├─→ wwwroot/css/seatmap.css (Seat styling)
+          └─→ Dark mode JavaScript
+                └─→ localStorage API
+
+    ├─→ Views/Home/Index.cshtml (Home Page)
+    │     ├─→ _Layout.cshtml (extends)
+    │     └─→ JavaScript carousel script
+    │
+    ├─→ Views/Movies/Index.cshtml (Movie List)
+    │     └─→ _Layout.cshtml (extends)
+    │
+    └─→ Views/Booking/SelectSeats.cshtml (Seat Selection)
+          ├─→ _Layout.cshtml (extends)
+          ├─→ seatmap.css (seat styling)
+          └─→ jQuery AJAX script
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## ✨ PHASE 6 FEATURES BY FILE
+
+wwwroot/css/seatmap.css provides:
+  ✓ Premium seat grid styling
+  ✓ Animations (pulse, slideInUp)
+  ✓ Dark mode seat colors
+  ✓ Responsive seat sizing
+  ✓ Print-friendly styles
+
+Data/SampleDataSeeding.cs provides:
+  ✓ 5 test users (admin + customers)
+  ✓ 5 movies with poster URLs
+  ✓ 2 theatres with 4 screens
+  ✓ 50+ shows for next 7 days
+  ✓ 3-tier pricing (Premium/Gold/Silver)
+  ✓ Automatic data generation
+
+Views/Shared/_Layout.cshtml provides:
+  ✓ Google Fonts (Poppins, Montserrat)
+  ✓ Premium navbar (gradient, icons)
+  ✓ Dark mode toggle button
+  ✓ User dropdown menu
+  ✓ Premium footer
+  ✓ Dark mode persistence (localStorage)
+
+Views/Home/Index.cshtml provides:
+  ✓ Hero carousel (4 featured movies)
+  ✓ Movie cards grid (responsive)
+  ✓ Carousel auto-advance
+  ✓ Navigation dots
+  ✓ "Now Playing" badges
+  ✓ Rating overlays
+
+Program.cs provides:
+  ✓ Automatic data seeding on startup
+  ✓ Error handling
+  ✓ Logging of seeding progress
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 🚀 HOW TO USE THIS REFERENCE
+
+For questions about specific features:
+
+"How do I test dark mode?"
+  → See: PHASE6_QUICK_START.txt (Dark Mode Testing section)
+
+"What data is seeded?"
+  → See: PHASE6_DELIVERY_SUMMARY.txt (Sample Data Seeding section)
+
+"How do I verify the UI looks correct?"
+  → See: PHASE6_TESTING_CHECKLIST.txt (Visual Testing section)
+
+"What are all the CSS classes for seats?"
+  → See: wwwroot/css/seatmap.css (class definitions)
+
+"How do I add more movies?"
+  → See: Data/SampleDataSeeding.cs (SeedMoviesAsync method)
+
+"Where is the dark mode toggle code?"
+  → See: Views/Shared/_Layout.cshtml (JavaScript section)
+
+"How does the carousel work?"
+  → See: Views/Home/Index.cshtml (JavaScript section)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 📈 WHAT'S NEXT AFTER PHASE 6
+
+Phase 6 Completion:
+  ✅ Modern UI complete
+  ✅ Dark mode working
+  ✅ Sample data ready
+  ✅ Full testing documented
+  ✅ Project documented (35,000+ words)
+
+Next Steps:
+
+Option 1: Deploy to Production
+  → Use PHASE6_DELIVERY_SUMMARY.txt deployment checklist
+  → Run PHASE6_TESTING_CHECKLIST.txt before deploying
+
+Option 2: Plan Phase 7 Enhancements
+  → See PROJECT_SUMMARY.txt (Known Limitations section)
+  → Suggested improvements:
+      • Admin Dashboard CRUD operations
+      • Email notifications
+      • Payment gateway integration
+      • Advanced reporting & analytics
+
+Option 3: Minor Improvements
+  → Customize colors in seatmap.css
+  → Add more movies in SampleDataSeeding.cs
+  → Adjust carousel timing in Home/Index.cshtml
+  → Modify pricing in SampleDataSeeding.cs
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## 💡 USEFUL COMMANDS
+
+Build:
+  $ dotnet build
+
+Run:
+  $ dotnet run
+
+Database:
+  $ dotnet ef database update
+  $ dotnet ef migrations list
+
+Check:
+  $ dotnet build --configuration Release
+
+Reset Data (if needed):
+  $ dotnet ef database drop --force
+  $ dotnet ef database update
+  $ dotnet run (seeding happens automatically)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+## ✅ VERIFICATION CHECKLIST
+
+After reading this guide:
+  ☐ Understand Phase 6 deliverables (4 new files, 3 modified)
+  ☐ Know where to find specific information (quick reference)
+  ☐ Able to run application ($ dotnet run)
+  ☐ Can test dark mode (moon icon)
+  ☐ Can verify sample data (5 movies visible)
+  ☐ Know how to run full tests (PHASE6_TESTING_CHECKLIST.txt)
+  ☐ Understand project architecture (PROJECT_SUMMARY.txt)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+Phase 6 – File Reference Complete! ✅
+
+Questions? Refer to appropriate documentation file above.
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════

@@ -1,0 +1,536 @@
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 4: VIEWMODELS & DTOS - COMPLETE REFERENCE
+═══════════════════════════════════════════════════════════════════════════════
+
+PROJECT PHASE: 4 of 6
+STATUS: ✅ COMPLETE
+DELIVERABLES: 10 ViewModel/DTO classes + comprehensive documentation
+
+═══════════════════════════════════════════════════════════════════════════════
+1. FOLDER STRUCTURE (Created)
+═══════════════════════════════════════════════════════════════════════════════
+
+CategoryMvcApp/
+├── ViewModels/
+│   ├── MovieCardViewModel.cs
+│   ├── MovieDetailViewModel.cs
+│   ├── ShowListItemViewModel.cs
+│   ├── ShowDetailViewModel.cs
+│   ├── SeatCategoryPriceViewModel.cs
+│   ├── SeatSelectionViewModel.cs
+│   ├── BookingConfirmationViewModel.cs
+│   ├── BookingHistoryItemViewModel.cs
+│   └── DTOs/
+│       ├── ReserveSeatsRequest.cs
+│       └── ReserveSeatsResponse.cs
+
+═══════════════════════════════════════════════════════════════════════════════
+2. VIEWMODEL MAPPING REFERENCE
+═══════════════════════════════════════════════════════════════════════════════
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ PAGE / FEATURE             │ ViewModel(s)                  │ Entity Source    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Home/Index (Movie Grid)    │ List<MovieCardViewModel>      │ Movie            │
+│                            │ (lightweight, grid display)   │                  │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Movies/Details/{id}        │ MovieDetailViewModel +        │ Movie +          │
+│ (Movie Info + Showtimes)   │ List<ShowListItemViewModel>   │ Show (active)    │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Booking/SelectSeats/{id}   │ SeatSelectionViewModel        │ Show +           │
+│ (Seat Selection Map)       │                               │ BookedSeat +     │
+│                            │                               │ SeatPrice        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Booking/ShowDetails/{id}   │ ShowDetailViewModel           │ Show +           │
+│ (Info Before Seat Select)  │                               │ Movie +          │
+│                            │                               │ SeatPrice        │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Booking/Confirmation/{id}  │ BookingConfirmationViewModel  │ Booking +        │
+│ (Post-Booking Summary)     │                               │ BookedSeat +     │
+│                            │                               │ Show + Movie     │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ UserProfile/History        │ List<BookingHistoryItem       │ Booking (all) +  │
+│ (Past/Upcoming Bookings)   │ ViewModel>                    │ Show + Movie +   │
+│                            │                               │ BookedSeat count │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Booking/ReserveSeats       │ ReserveSeatsRequest (input)   │ N/A (JSON)       │
+│ (AJAX POST)                │ ReserveSeatsResponse (output) │ Returns Booking  │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════
+3. VIEWMODEL DETAILS
+═══════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+MovieCardViewModel (Lightweight)
+────────────────────────────────────────────────────────────────────────────────
+Purpose:  Display movies in grid/list format (Home page, search results)
+Fields:   Id, Title, PosterUrl, ReleaseDate, Description, IsActive
+Features: • Short description (truncate if > 100 chars)
+          • URL validation for poster
+          • No related entities (lightweight)
+Used by:  Home/Index → [Display MovieCardViewModel as grid with images]
+
+Example Entity → ViewModel mapping:
+    var vm = movies.Select(m => new MovieCardViewModel
+    {
+        Id = m.Id,
+        Title = m.Title,
+        PosterUrl = m.PosterUrl,
+        ReleaseDate = m.ReleaseDate,
+        Description = m.Description.Length > 100 ? 
+            m.Description.Substring(0, 100) + "..." : m.Description,
+        IsActive = m.IsActive
+    }).ToList();
+
+────────────────────────────────────────────────────────────────────────────────
+MovieDetailViewModel (Rich)
+────────────────────────────────────────────────────────────────────────────────
+Purpose:  Show full movie details with list of available showtimes
+Fields:   Id, Title, Description, DurationMinutes, ReleaseDate, PosterUrl, 
+          TrailerUrl, IsActive, List<ShowListItemViewModel> ShowTimes
+Features: • Full description
+          • All metadata fields
+          • Embedded list of active showtimes for selection
+Used by:  Movies/Details/{id} → [Movie info + clickable showtimes]
+
+Example mapping:
+    var vm = new MovieDetailViewModel
+    {
+        Id = movie.Id,
+        Title = movie.Title,
+        Description = movie.Description,
+        DurationMinutes = movie.DurationMinutes,
+        ReleaseDate = movie.ReleaseDate,
+        PosterUrl = movie.PosterUrl,
+        TrailerUrl = movie.TrailerUrl,
+        IsActive = movie.IsActive,
+        ShowTimes = movie.Shows.Where(s => s.IsActive)
+            .Select(s => new ShowListItemViewModel { ... }).ToList()
+    };
+
+Include path: .Include(m => m.Shows).ThenInclude(s => s.SeatPrices)
+
+────────────────────────────────────────────────────────────────────────────────
+ShowListItemViewModel (Lightweight)
+────────────────────────────────────────────────────────────────────────────────
+Purpose:  Compact show/showtime display in lists and grids
+Fields:   ShowId, StartDateTime, EndDateTime, ScreenName, TheatreName, City, 
+          PriceRange, IsActive
+Features: • Shows only essential info (time, location, price range)
+          • Pre-calculated price range (min–max across all seat categories)
+          • No related entities loaded
+Used by:  MovieDetailViewModel.ShowTimes, SearchResults page
+
+Example mapping:
+    new ShowListItemViewModel
+    {
+        ShowId = s.Id,
+        StartDateTime = s.StartDateTime,
+        EndDateTime = s.EndDateTime,
+        ScreenName = s.Screen.Name,
+        TheatreName = s.Screen.Theatre.Name,
+        City = s.Screen.Theatre.City,
+        PriceRange = $"₹{s.SeatPrices.Min(p => p.Price)} – ₹{s.SeatPrices.Max(p => p.Price)}",
+        IsActive = s.IsActive
+    }
+
+────────────────────────────────────────────────────────────────────────────────
+SeatCategoryPriceViewModel (Simple)
+────────────────────────────────────────────────────────────────────────────────
+Purpose:  Represent pricing for one seat category in one show
+Fields:   Category, Price
+Features: • Minimal model for nested use in other ViewModels
+          • Used in lists within SeatSelectionViewModel and ShowDetailViewModel
+Used by:  ShowDetailViewModel.Prices, SeatSelectionViewModel.Prices
+
+Example mapping:
+    var prices = show.SeatPrices
+        .Select(p => new SeatCategoryPriceViewModel
+        {
+            Category = p.Category,  // "Premium", "Regular", "Economy"
+            Price = p.Price
+        })
+        .ToList();
+
+────────────────────────────────────────────────────────────────────────────────
+ShowDetailViewModel (Rich)
+────────────────────────────────────────────────────────────────────────────────
+Purpose:  Intermediate page before seat selection (show info + pricing)
+Fields:   ShowId, MovieTitle, PosterUrl, TheatreName, ScreenName, StartDateTime,
+          DurationMinutes, List<SeatCategoryPriceViewModel> Prices
+Features: • Shows detailed information without seat availability (lighter weight)
+          • Embedded pricing information (List<SeatCategoryPriceViewModel>)
+          • User can confirm and proceed to seat selection
+Used by:  Shows/Details/{showId} → [Show summary + "Select Seats" button]
+
+Include path: .Include(s => s.Movie)
+              .Include(s => s.Screen).ThenInclude(sc => sc.Theatre)
+              .Include(s => s.SeatPrices)
+
+────────────────────────────────────────────────────────────────────────────────
+SeatSelectionViewModel (Complex, Core)
+────────────────────────────────────────────────────────────────────────────────
+Purpose:  Core ViewModel for seat selection/booking page (main booking UX)
+Fields:   ShowId, MovieTitle, PosterUrl, TheatreName, ScreenName, StartDateTime,
+          DurationMinutes, List<SeatCategoryPriceViewModel> Prices, 
+          List<string> BookedSeats, string LayoutJson, int Rows, int Columns
+Features: • Full show + movie information
+          • List of already-booked seats (for visualization)
+          • Seat layout as JSON (screen.LayoutJson) + parsed Rows/Columns
+          • All pricing info for category lookup during selection
+          • AJAX integration point: jQuery renders seat grid, sends selected seats
+Used by:  Booking/SelectSeats/{showId} → [Interactive seat grid map]
+
+Include path: .Include(s => s.Movie)
+              .Include(s => s.Screen).ThenInclude(sc => sc.Theatre)
+              .Include(s => s.SeatPrices)
+              .Include(s => s.BookedSeats)
+
+AJAX Integration flow:
+    1. Page loads SeatSelectionViewModel with seat layout & booked seats
+    2. jQuery renders 10x15 grid (from Rows/Columns), marks booked seats disabled
+    3. User clicks available seats to select them
+    4. "Reserve Seats" button triggers AJAX POST /Booking/ReserveSeats
+    5. ReserveSeatsRequest payload: { showId, seatNumbers: ["A1", "A2", ...] }
+    6. ReserveSeatsResponse returns { success, bookingId, message, errorDetails }
+    7. On success: redirect to /Booking/Confirmation/{bookingId}
+
+────────────────────────────────────────────────────────────────────────────────
+BookingConfirmationViewModel (Rich)
+────────────────────────────────────────────────────────────────────────────────
+Purpose:  Display post-booking confirmation and ticket details
+Fields:   BookingId, ConfirmationNumber, MovieTitle, TheatreName, ScreenName,
+          ShowTime, List<BookedSeatDetailViewModel> Seats, TotalAmount, 
+          BookingDateTime, Status, Notes
+Nested:   BookedSeatDetailViewModel (SeatNumber, Category, Price)
+Features: • Complete booking summary
+          • Individual seat details with prices
+          • Confirmation number for reference
+          • Status indicator
+Used by:  Booking/Confirmation/{bookingId} → [Print-friendly confirmation]
+
+Include path: .Include(b => b.Show).ThenInclude(s => s.Movie)
+              .Include(b => b.Show).ThenInclude(s => s.Screen).ThenInclude(sc => sc.Theatre)
+              .Include(b => b.BookedSeats)
+
+────────────────────────────────────────────────────────────────────────────────
+BookingHistoryItemViewModel (Lightweight)
+────────────────────────────────────────────────────────────────────────────────
+Purpose:  List user's past and upcoming bookings in profile/history page
+Fields:   BookingId, MovieTitle, ShowTime, TheatreName, SeatCount, TotalAmount,
+          Status, BookingDateTime, IsUpcoming
+Features: • Compact display for history list
+          • IsUpcoming flag for filtering/sorting
+          • No detailed seat info (summary only)
+Used by:  UserProfile/BookingHistory → [List of all user bookings]
+
+Include path: .Include(b => b.Show).ThenInclude(s => s.Movie)
+              .Include(b => b.Show).ThenInclude(s => s.Screen).ThenInclude(sc => sc.Theatre)
+              .Include(b => b.BookedSeats)
+
+Example mapping:
+    var vm = bookings.Select(b => new BookingHistoryItemViewModel
+    {
+        BookingId = b.Id,
+        MovieTitle = b.Show.Movie.Title,
+        ShowTime = b.Show.StartDateTime,
+        TheatreName = b.Show.Screen.Theatre.Name,
+        SeatCount = b.BookedSeats.Count,
+        TotalAmount = b.TotalAmount,
+        Status = b.Status.ToString(),
+        BookingDateTime = b.BookingDateTime,
+        IsUpcoming = b.Show.StartDateTime > DateTime.UtcNow
+    }).ToList();
+
+═══════════════════════════════════════════════════════════════════════════════
+4. DTOs FOR AJAX INTEGRATION
+═══════════════════════════════════════════════════════════════════════════════
+
+────────────────────────────────────────────────────────────────────────────────
+ReserveSeatsRequest (Input DTO)
+────────────────────────────────────────────────────────────────────────────────
+Purpose:  Receive user's seat selections from AJAX POST request
+Fields:   int ShowId, List<string> SeatNumbers
+Features: • [FromBody] JSON binding
+          • Validation attributes (Required, MinLength)
+Sent by:  jQuery AJAX from SeatSelectionViewModel page
+Received: BookingController.ReserveSeats([FromBody] ReserveSeatsRequest request)
+
+Example jQuery AJAX call:
+    var request = {
+        showId: @Model.ShowId,
+        seatNumbers: ["A1", "A2", "B5"]
+    };
+
+    $.ajax({
+        type: "POST",
+        url: "/Booking/ReserveSeats",
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        data: JSON.stringify(request),
+        success: function(response) {
+            if (response.success) {
+                window.location.href = "/Booking/Confirmation/" + response.bookingId;
+            } else {
+                alert("Error: " + response.message);
+            }
+        },
+        error: function(xhr) {
+            alert("Request failed: " + xhr.statusText);
+        }
+    });
+
+────────────────────────────────────────────────────────────────────────────────
+ReserveSeatsResponse (Output DTO)
+────────────────────────────────────────────────────────────────────────────────
+Purpose:  Return booking result as JSON to AJAX caller
+Fields:   bool Success, string Message, int? BookingId, string ErrorDetails
+Features: • Flexible error reporting (Message for user, ErrorDetails for logs)
+          • BookingId null if failed, populated if success
+Returned: BookingController.ReserveSeats() → Json(response)
+
+Server action skeleton:
+    [HttpPost]
+    [Authorize]  // Only logged-in users
+    public async Task<IActionResult> ReserveSeats([FromBody] ReserveSeatsRequest request)
+    {
+        try
+        {
+            // Validate show
+            var show = await _context.Shows.FindAsync(request.ShowId);
+            if (show == null)
+                return Json(new ReserveSeatsResponse 
+                { 
+                    Success = false, 
+                    Message = "Show not found",
+                    ErrorDetails = $"ShowId {request.ShowId} invalid"
+                });
+
+            // Check seat availability
+            var booked = await _context.BookedSeats
+                .Where(bs => bs.ShowId == request.ShowId 
+                    && request.SeatNumbers.Contains(bs.SeatNumber))
+                .CountAsync();
+
+            if (booked > 0)
+                return Json(new ReserveSeatsResponse
+                {
+                    Success = false,
+                    Message = "Some seats already booked",
+                    ErrorDetails = "Please select different seats"
+                });
+
+            // Create booking (in transaction)
+            using var transaction = _context.Database.BeginTransaction();
+            
+            var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var booking = new Booking
+            {
+                UserId = userId,
+                ShowId = request.ShowId,
+                BookingDateTime = DateTime.UtcNow,
+                Status = BookingStatus.Confirmed,
+                IsActive = true
+            };
+
+            _context.Bookings.Add(booking);
+            await _context.SaveChangesAsync();
+
+            // Add booked seats
+            decimal totalAmount = 0;
+            var seatPrices = await _context.SeatPrices.Where(p => p.ShowId == request.ShowId).ToListAsync();
+
+            foreach (var seatNum in request.SeatNumbers)
+            {
+                var category = DetermineSeatCategory(seatNum);  // Your logic
+                var price = seatPrices.FirstOrDefault(p => p.Category == category)?.Price ?? 0;
+                totalAmount += price;
+
+                _context.BookedSeats.Add(new BookedSeat
+                {
+                    BookingId = booking.Id,
+                    ShowId = request.ShowId,
+                    SeatNumber = seatNum,
+                    Category = category,
+                    Price = price,
+                    IsActive = true
+                });
+            }
+
+            booking.TotalAmount = totalAmount;
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+
+            return Json(new ReserveSeatsResponse
+            {
+                Success = true,
+                Message = "Booking confirmed successfully",
+                BookingId = booking.Id
+            });
+        }
+        catch (Exception ex)
+        {
+            return Json(new ReserveSeatsResponse
+            {
+                Success = false,
+                Message = "Booking failed",
+                ErrorDetails = ex.Message
+            });
+        }
+    }
+
+═══════════════════════════════════════════════════════════════════════════════
+5. USAGE SUMMARY TABLE
+═══════════════════════════════════════════════════════════════════════════════
+
+ViewModel                    | Controller Action         | View Path
+─────────────────────────────┼───────────────────────────┼────────────────────────
+MovieCardViewModel           | HomeController.Index()    | Views/Home/Index.cshtml
+(List<>)                     | MoviesController.List()   | Views/Movies/List.cshtml
+
+MovieDetailViewModel         | MoviesController.Details()| Views/Movies/Details.cshtml
+(Single)                     | (id)                      |
+
+ShowListItemViewModel        | Part of                   | Views/Movies/Details.cshtml
+(List<>, nested)             | MovieDetailViewModel      | (in foreach loop)
+
+ShowDetailViewModel          | BookingController.Show()  | Views/Booking/ShowDetails
+(Single)                     | Details(id)               | .cshtml
+
+SeatSelectionViewModel       | BookingController.        | Views/Booking/
+(Single)                     | SelectSeats(id)           | SelectSeats.cshtml
+
+BookingConfirmationViewModel | BookingController.        | Views/Booking/
+(Single)                     | Confirmation(id)          | Confirmation.cshtml
+
+BookingHistoryItemViewModel  | UserProfileController.    | Views/UserProfile/
+(List<>, paged)              | BookingHistory()          | BookingHistory.cshtml
+
+ReserveSeatsRequest          | BookingController.        | N/A (JSON only)
+(DTO)                        | ReserveSeats() [HttpPost] |
+
+ReserveSeatsResponse         | BookingController.        | N/A (JSON only)
+(DTO)                        | ReserveSeats() [HttpPost] |
+
+═══════════════════════════════════════════════════════════════════════════════
+6. NEXT PHASE: PHASE 5 – BOOKING CONTROLLER & BUSINESS LOGIC
+═══════════════════════════════════════════════════════════════════════════════
+
+After Phase 4 (ViewModels), Phase 5 will create the BookingController with:
+
+Controllers/BookingController.cs
+├── [HttpGet]
+│   ├── ShowDetails(int id)                 → Show pricing before seat selection
+│   └── SelectSeats(int showId)             → Render seat grid + booked seats
+├── [HttpPost]
+│   └── ReserveSeats([FromBody])            → AJAX endpoint for seat reservation
+└── [HttpGet]
+    └── Confirmation(int bookingId)         → Display booking confirmation
+
+Key implementation notes for Phase 5:
+• All booking operations use [Authorize] attribute (logged-in users only)
+• ReserveSeats uses database transaction for atomicity (prevent race conditions)
+• Unique index on BookedSeat(ShowId, SeatNumber) prevents double-booking at DB level
+• Calculate TotalAmount from SeatPrice entities based on selected seat categories
+• Use soft delete pattern: IsActive = true/false (don't physically delete)
+• DateTime fields use DateTime.UtcNow (server UTC time)
+
+═══════════════════════════════════════════════════════════════════════════════
+7. VALIDATION & DATA ANNOTATIONS REFERENCE
+═══════════════════════════════════════════════════════════════════════════════
+
+Applied throughout ViewModels:
+• [Required]                 – Non-nullable strings, objects, collections
+• [StringLength(n)]          – Max length validation
+• [Range(min, max)]          – Numeric ranges
+• [Url]                      – URL format validation
+• [DataType(DataType.Date)]  – DateTime fields
+• [DataType(DataType.DateTime)] – DateTime with time
+• [DataType(DataType.Currency)] – Decimal price fields
+• [Display(Name = "...")]    – User-friendly labels for forms
+• [RegularExpression(...)]   – Custom pattern (e.g., seat numbers)
+• [MinLength(n)]             – Minimum items in collection
+
+All annotations follow ASP.NET Core standards and integrate with:
+• Model Binding (automatic JSON/form deserialization)
+• View Rendering ([Display] labels in generated HTML)
+• Validation (client-side via unobtrusive validation JS)
+• Documentation (IntelliSense in strongly-typed views)
+
+═══════════════════════════════════════════════════════════════════════════════
+8. STRONGLY-TYPED VIEWS & RAZOR INTEGRATION
+═══════════════════════════════════════════════════════════════════════════════
+
+All ViewModels support strongly-typed Razor views:
+
+@model MovieCardViewModel
+<div class="movie-card">
+    <img src="@Model.PosterUrl" alt="@Model.Title" />
+    <h3>@Model.Title</h3>
+    <p>@Model.ReleaseDate.ToShortDateString()</p>
+    <p>@Html.DisplayFor(m => m.Description)</p>
+</div>
+
+@model List<MovieCardViewModel>
+<div class="movie-grid">
+    @foreach (var movie in Model)
+    {
+        <div class="card">
+            <img src="@movie.PosterUrl" />
+            <h4>@movie.Title</h4>
+        </div>
+    }
+</div>
+
+Benefits:
+• IntelliSense support in views
+• Compile-time type checking
+• Automatic HTML encoding for security
+• Display annotations automatically respected
+
+═══════════════════════════════════════════════════════════════════════════════
+9. KEY FILES CREATED IN PHASE 4
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ ViewModels/MovieCardViewModel.cs                    (100 lines)
+✅ ViewModels/MovieDetailViewModel.cs                  (90 lines)
+✅ ViewModels/ShowListItemViewModel.cs                 (85 lines)
+✅ ViewModels/ShowDetailViewModel.cs                   (95 lines)
+✅ ViewModels/SeatCategoryPriceViewModel.cs            (40 lines)
+✅ ViewModels/SeatSelectionViewModel.cs                (145 lines)
+✅ ViewModels/BookingConfirmationViewModel.cs          (115 lines)
+✅ ViewModels/BookingHistoryItemViewModel.cs           (90 lines)
+✅ ViewModels/DTOs/ReserveSeatsRequest.cs              (75 lines)
+✅ ViewModels/DTOs/ReserveSeatsResponse.cs             (140 lines)
+
+Total: 10 files, ~975 lines of well-documented, production-ready code
+All files include:
+• XML documentation (///) on classes and key fields
+• Data annotations for validation & display
+• Usage examples in comments
+• Mappings from entity models
+• Integration notes
+
+═══════════════════════════════════════════════════════════════════════════════
+10. INTEGRATION CHECKLIST FOR DEVELOPERS
+═══════════════════════════════════════════════════════════════════════════════
+
+After Phase 4 (ViewModels), before Phase 5 (BookingController):
+
+□ Add using CategoryMvcApp.ViewModels; to controller files
+□ Add using CategoryMvcApp.ViewModels.DTOs; for AJAX DTOs
+□ Create Views/Movies/ folder if not exists
+□ Create Views/Booking/ folder if not exists
+□ Create Views/UserProfile/ folder if not exists
+□ Update Home/Index to List<MovieCardViewModel>
+□ Test Home page displays movie grid (temporarily with dummy data)
+□ Prepare database queries for each ViewModel mapping
+□ Plan AJAX endpoint routing (typically POST /Booking/ReserveSeats)
+□ Prepare JavaScript for seat grid rendering (Phase 5)
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PHASE 4 STATUS: ✅ COMPLETE - Ready for Phase 5 (Booking Controller)
+
+═══════════════════════════════════════════════════════════════════════════════

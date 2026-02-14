@@ -1,0 +1,250 @@
+═════════════════════════════════════════════════════════════════════════════════
+PHASE 3 SUMMARY – QUICK REFERENCE
+═════════════════════════════════════════════════════════════════════════════════
+
+✅ PHASE 3 COMPLETE – Identity & Role-Based Authorization
+
+FILES CREATED:
+  ✓ Program.cs (UPDATED) ..................... Full Identity + Areas support
+  ✓ Areas/Admin/Controllers/DashboardController.cs ... Admin dashboard
+  ✓ Areas/Admin/Views/Dashboard/Index.cshtml ........... Dashboard view
+  ✓ Areas/Admin/Views/Shared/_AdminLayout.cshtml ...... Admin layout
+  ✓ PHASE3_IDENTITY_SCAFFOLDING_GUIDE.txt ............. Detailed guide
+  ✓ PHASE3_REGISTER_OVERRIDE_REFERENCE.cs ............ Role assignment code
+  ✓ PHASE3_COMPLETE.txt ............................ Full summary
+
+═════════════════════════════════════════════════════════════════════════════════
+QUICK SETUP CHECKLIST
+═════════════════════════════════════════════════════════════════════════════════
+
+1. INSTALL CODE GENERATOR (One-time):
+   dotnet tool install -g dotnet-aspnet-codegenerator
+
+2. ADD PACKAGE TO PROJECT:
+   dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
+
+3. SCAFFOLD IDENTITY UI:
+   dotnet aspnet-codegenerator identity -dc ApplicationDbContext
+
+4. UPDATE _Layout.cshtml:
+   Add <partial name="_LoginPartial" /> to navbar
+
+5. BUILD & RUN:
+   dotnet build
+   dotnet run
+
+6. TEST:
+   • Navigate to /Identity/Account/Login
+   • Login: admin@movie.com / Admin@123!
+   • Go to /Admin/Dashboard
+   • Should see admin dashboard with sidebar
+
+═════════════════════════════════════════════════════════════════════════════════
+KEY CONFIGURATIONS IN PROGRAM.CS
+═════════════════════════════════════════════════════════════════════════════════
+
+✓ AddDbContext<ApplicationDbContext> with SQL Server
+✓ AddIdentity<ApplicationUser, IdentityRole>
+  • Password: 6+ chars, digit, non-alphanumeric, uppercase, lowercase
+  • Lockout: 5 failed attempts → 5 min timeout
+  • Email uniqueness required
+✓ AddDefaultUI() ← For scaffolded Identity pages
+✓ AddAuthorization with "AdminOnly" and "UserOnly" policies
+✓ Middleware order:
+  • app.UseAuthentication() BEFORE
+  • app.UseAuthorization()
+✓ Route mapping:
+  • MapRazorPages() for Identity
+  • Area route for /Admin/*
+  • Default MVC route
+
+═════════════════════════════════════════════════════════════════════════════════
+ROLES & ACCESS CONTROL
+═════════════════════════════════════════════════════════════════════════════════
+
+TWO ROLES (Seeded in Phase 2):
+  1. "Admin" .... Manage content, view reports, /Admin/* pages
+  2. "User" .... Browse, search, book tickets (default for new registrations)
+
+ROLE ASSIGNMENT:
+  ✓ [Authorize(Roles = "Admin")] → Only admins can access
+  ✓ [Authorize(Roles = "User")] → Only users (or admins) can access
+  ✓ [Authorize] → Any authenticated user
+  ✓ No [Authorize] → Public access
+
+PROTECTING CONTROLLERS:
+  [Area("Admin")]
+  [Authorize(Roles = "Admin")]
+  public class DashboardController : Controller
+  {
+      public IActionResult Index() { ... }  // Admin only
+  }
+
+═════════════════════════════════════════════════════════════════════════════════
+ADMIN DASHBOARD ACCESS
+═════════════════════════════════════════════════════════════════════════════════
+
+URL: /Admin or /Admin/Dashboard
+
+Flow:
+  1. User requests /Admin/Dashboard
+  2. [Authorize(Roles = "Admin")] checks
+  3. If admin → Show dashboard
+  4. If not authenticated → Redirect to login
+  5. If not admin → Show "Access Denied"
+
+Default Admin Credentials (Seeded):
+  Email: admin@movie.com
+  Password: Admin@123!
+  Role: Admin
+
+═════════════════════════════════════════════════════════════════════════════════
+AUTHENTICATION ENDPOINTS (After Scaffolding)
+═════════════════════════════════════════════════════════════════════════════════
+
+PUBLIC:
+  • /Identity/Account/Login
+  • /Identity/Account/Register
+  • /Identity/Account/ForgotPassword
+
+AUTHENTICATED:
+  • /Identity/Account/Logout
+  • /Identity/Account/Manage
+  • /Identity/Account/Manage/ChangePassword
+
+ADMIN ONLY:
+  • /Admin
+  • /Admin/Dashboard
+
+═════════════════════════════════════════════════════════════════════════════════
+AUTO-ASSIGN "USER" ROLE ON REGISTRATION (Optional Override)
+═════════════════════════════════════════════════════════════════════════════════
+
+After scaffolding, edit Areas/Identity/Pages/Account/Register.cshtml.cs
+
+In OnPostAsync() method, after user is created, add:
+
+    var roleResult = await _userManager.AddToRoleAsync(user, "User");
+    if (!roleResult.Succeeded)
+    {
+        foreach (var error in roleResult.Errors)
+        {
+            ModelState.AddModelError(string.Empty, error.Description);
+        }
+        return Page();
+    }
+
+This ensures new users can book tickets automatically (without manual admin role assignment).
+
+═════════════════════════════════════════════════════════════════════════════════
+WHAT GETS SCAFFOLDED
+═════════════════════════════════════════════════════════════════════════════════
+
+Areas/Identity/Pages/Account/
+  ✓ Login.cshtml & Login.cshtml.cs
+  ✓ Register.cshtml & Register.cshtml.cs
+  ✓ Logout.cshtml & Logout.cshtml.cs
+  ✓ ForgotPassword.cshtml & ForgotPassword.cshtml.cs
+  ✓ ResetPassword.cshtml & ResetPassword.cshtml.cs
+  ✓ ConfirmEmail.cshtml & ConfirmEmail.cshtml.cs
+  ✓ AccessDenied.cshtml
+  ✓ Manage/ folder with profile/password management pages
+
+Areas/Identity/Pages/Shared/
+  ✓ _LoginPartial.cshtml ← Add this to main _Layout.cshtml
+
+═════════════════════════════════════════════════════════════════════════════════
+INTEGRATION WITH MAIN LAYOUT
+═════════════════════════════════════════════════════════════════════════════════
+
+After scaffolding, update Views/Shared/_Layout.cshtml
+
+Find the navbar section and add:
+
+    <partial name="_LoginPartial" />
+
+This displays:
+  • "Login" link if user is NOT authenticated
+  • "Username + Logout" dropdown if user IS authenticated
+
+═════════════════════════════════════════════════════════════════════════════════
+TESTING THE AUTHENTICATION FLOW
+═════════════════════════════════════════════════════════════════════════════════
+
+1. Build: dotnet build
+2. Run: dotnet run
+3. Navigate to: https://localhost:xxxx/
+4. Click "Login" in navbar
+5. Enter: admin@movie.com / Admin@123!
+6. After login: navbar shows "admin@movie.com"
+7. Navigate to: /Admin/Dashboard
+8. Should see: Admin Dashboard with sidebar menu
+
+═════════════════════════════════════════════════════════════════════════════════
+SECURITY NOTES
+═════════════════════════════════════════════════════════════════════════════════
+
+✓ ANTIFORGERY TOKENS
+  • All POST/PUT/DELETE forms must validate antiforgery token
+  • Added automatically in scaffolded forms
+  • Protects against CSRF attacks
+
+✓ ROLE-BASED AUTHORIZATION
+  • Server-side validation only (never trust client-side)
+  • Use [Authorize(Roles = "Admin")] on sensitive actions
+  • Implement row-level security (users see only their data)
+
+✓ HTTPS IN PRODUCTION
+  • Always use HTTPS in production
+  • Development mode allows HTTP (for testing)
+  • Enable HSTS: app.UseHsts();
+
+✓ PASSWORD HASHING
+  • Passwords hashed with ASP.NET Core Identity
+  • Never store plain text passwords
+  • Validate policy: 6+ chars, digit, special char, upper/lower
+
+✓ SECURE COOKIES
+  • HttpOnly flag: prevents JavaScript access
+  • Secure flag: HTTPS only in production
+  • SameSite=Strict: CSRF protection
+
+═════════════════════════════════════════════════════════════════════════════════
+TROUBLESHOOTING
+═════════════════════════════════════════════════════════════════════════════════
+
+Issue: Scaffolding command not found
+Fix:   dotnet tool install -g dotnet-aspnet-codegenerator
+
+Issue: /Identity/Account/Login returns 404
+Fix:   Ensure app.MapRazorPages() in Program.cs (already added)
+
+Issue: /Admin/Dashboard shows "Access Denied"
+Fix:   Verify admin@movie.com is logged in and has "Admin" role
+
+Issue: Role not assigned after registration
+Fix:   Override Register.cshtml.cs to auto-assign "User" role
+
+Issue: Middleware order error
+Fix:   app.UseAuthentication() MUST come BEFORE app.UseAuthorization()
+
+═════════════════════════════════════════════════════════════════════════════════
+NEXT: PHASE 4 – VIEWMODELS & DTOS
+═════════════════════════════════════════════════════════════════════════════════
+
+After Phase 3 is complete and tested, proceed to Phase 4 for:
+
+  ✓ MovieCardViewModel – Display movies in listing
+  ✓ ShowDetailViewModel – Show details with seat prices
+  ✓ SeatSelectionViewModel – Seat grid + availability
+  ✓ ReserveSeatsRequest/Response – AJAX DTOs
+  ✓ BookingConfirmationViewModel – Confirmation details
+
+Then Phase 5:
+  ✓ BookingController with AJAX endpoints
+  ✓ Seat selection view + jQuery/AJAX
+  ✓ Admin CRUD controllers
+
+═════════════════════════════════════════════════════════════════════════════════
+
+✅ PHASE 3 READY FOR SCAFFOLDING – Good luck! 🎬

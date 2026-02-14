@@ -1,0 +1,277 @@
+/*
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * MOVIE TICKET MANAGEMENT SYSTEM – DATA DICTIONARY (PHASE 1)
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * Project: Movie Ticket Management System (Academic Project, 2025–2026)
+ * Purpose: Complete guide to all entity models, relationships, and constraints.
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * TABLE STRUCTURE & ENTITY OVERVIEW
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * 1. ApplicationUser (extends IdentityUser)
+ *    ├─ Inherits: Id (PK), UserName, Email, PhoneNumber, PasswordHash, etc.
+ *    ├─ Custom Fields:
+ *    │  ├─ FirstName (string, nullable)
+ *    │  ├─ LastName (string, nullable)
+ *    │  └─ IsActive (bool, default=true) – Soft delete flag
+ *    └─ Relationships: 1:N → Bookings
+ *    
+ *    Purpose: Authentication, user profile, booking history tracking.
+ *    Roles: "User" or "Admin" (managed by Identity roles table).
+ * 
+ * 2. Movie
+ *    ├─ Id (PK, int, auto-increment)
+ *    ├─ Title (string, 1–200 chars, required)
+ *    ├─ Description (string, 0–1000 chars, optional)
+ *    ├─ DurationMinutes (int, > 0)
+ *    ├─ ReleaseDate (datetime)
+ *    ├─ PosterUrl (string, URL format, optional)
+ *    ├─ TrailerUrl (string, URL format, optional)
+ *    ├─ IsActive (bool, default=true)
+ *    ├─ CreatedAt (datetime, default=UtcNow)
+ *    └─ Relationships: 1:N → Shows
+ *    
+ *    Purpose: Movie catalog. Admin can CRUD. Users view and filter.
+ *    Constraints: Required: Title. Url validation on posterUrl/trailerUrl.
+ * 
+ * 3. Theatre
+ *    ├─ Id (PK, int, auto-increment)
+ *    ├─ Name (string, 1–150 chars, required)
+ *    ├─ City (string, 1–100 chars, required)
+ *    ├─ Address (string, 0–500 chars, optional)
+ *    ├─ IsActive (bool, default=true)
+ *    ├─ CreatedAt (datetime, default=UtcNow)
+ *    └─ Relationships: 1:N → Screens
+ *    
+ *    Purpose: Venue/cinema management. Admin adds theatres and manages screens.
+ *    Constraints: Required: Name, City. No duplicate (Name, City) – consider adding unique index.
+ *    Notes: Soft-deletable via IsActive flag.
+ * 
+ * 4. Screen
+ *    ├─ Id (PK, int, auto-increment)
+ *    ├─ TheatreId (FK → Theatre.Id)
+ *    ├─ Name (string, 1–100 chars, required) – e.g., "Screen 1", "IMAX"
+ *    ├─ TotalSeats (int, > 0)
+ *    ├─ LayoutJson (string, 0–5000 chars, optional)
+ *    │  └─ Example: {"rows": 10, "cols": 15, "categories": {"A": "Silver", "B": "Gold", "C": "Platinum"}}
+ *    ├─ IsActive (bool, default=true)
+ *    ├─ CreatedAt (datetime, default=UtcNow)
+ *    └─ Relationships: 1:N → Shows; N:1 ← Theatre
+ *    
+ *    Purpose: Auditorium/screen management. Stores seat layout configuration.
+ *    Constraints: 
+ *      - Required: TheatreId, Name, TotalSeats
+ *      - Unique index on (TheatreId, Name) – prevent duplicate screen names per theatre
+ *    Notes: LayoutJson enables flexible seat categorization and dynamic UI rendering.
+ * 
+ * 5. Show
+ *    ├─ Id (PK, int, auto-increment)
+ *    ├─ MovieId (FK → Movie.Id)
+ *    ├─ ScreenId (FK → Screen.Id)
+ *    ├─ StartDateTime (datetime, required)
+ *    ├─ EndDateTime (datetime, required)
+ *    ├─ IsActive (bool, default=true)
+ *    ├─ CreatedAt (datetime, default=UtcNow)
+ *    └─ Relationships: 
+ *       ├─ N:1 ← Movie
+ *       ├─ N:1 ← Screen
+ *       ├─ 1:N → SeatPrices
+ *       ├─ 1:N → Bookings
+ *       └─ 1:N → BookedSeats
+ *    
+ *    Purpose: Movie time slot. Multiple shows per movie/day possible.
+ *    Constraints: Required: MovieId, ScreenId, StartDateTime, EndDateTime.
+ *                 EndDateTime >= StartDateTime (add custom validation).
+ *    Notes: Price categories are show-specific for dynamic pricing.
+ * 
+ * 6. SeatPrice
+ *    ├─ Id (PK, int, auto-increment)
+ *    ├─ ShowId (FK → Show.Id)
+ *    ├─ Category (string, 1–50 chars, required) – e.g., "Silver", "Gold", "Platinum"
+ *    ├─ Price (decimal(10,2), > 0)
+ *    ├─ CreatedAt (datetime, default=UtcNow)
+ *    └─ Relationships: N:1 ← Show
+ *    
+ *    Purpose: Define seat category prices for a show.
+ *    Example: Show #5 has Silver=300, Gold=500, Platinum=800 (in currency units).
+ *    Constraints: Required: ShowId, Category. Price must be > 0.
+ *                 Unique index on (ShowId, Category) – prevent duplicate categories per show.
+ *    Notes: Prices per show allow dynamic/real-time pricing strategies.
+ * 
+ * 7. Booking
+ *    ├─ Id (PK, int, auto-increment)
+ *    ├─ UserId (FK → ApplicationUser.Id)
+ *    ├─ ShowId (FK → Show.Id)
+ *    ├─ BookingDateTime (datetime, required)
+ *    ├─ TotalAmount (decimal(10,2), >= 0)
+ *    ├─ Status (string, max 50 chars, default="Pending") – "Pending", "Confirmed", "Cancelled"
+ *    ├─ IsActive (bool, default=true)
+ *    ├─ Notes (string, 0–500 chars, optional)
+ *    ├─ CreatedAt (datetime, default=UtcNow)
+ *    └─ Relationships:
+ *       ├─ N:1 ← ApplicationUser
+ *       ├─ N:1 ← Show
+ *       └─ 1:N → BookedSeats
+ *    
+ *    Purpose: Ticket booking transaction record. Aggregates all seats for a user's booking.
+ *    Constraints: Required: UserId, ShowId, BookingDateTime, TotalAmount, Status.
+ *    Status Flow: Pending (initial) → Confirmed (after payment) → Cancelled (if refunded).
+ *    Notes: TotalAmount = SUM of all BookedSeat prices. Soft-deletable via IsActive.
+ * 
+ * 8. BookedSeat
+ *    ├─ Id (PK, int, auto-increment)
+ *    ├─ BookingId (FK → Booking.Id)
+ *    ├─ ShowId (FK → Show.Id, denormalized for performance)
+ *    ├─ SeatNumber (string, 1–10 chars, required, alphanumeric) – e.g., "A12", "C05"
+ *    ├─ Category (string, 1–50 chars, required) – e.g., "Silver", "Gold"
+ *    ├─ Price (decimal(10,2), >= 0)
+ *    ├─ IsActive (bool, default=true)
+ *    ├─ CreatedAt (datetime, default=UtcNow)
+ *    └─ Relationships:
+ *       ├─ N:1 ← Booking
+ *       └─ N:1 ← Show
+ *    
+ *    Purpose: Individual seat reservation. Each row = one seat booked.
+ *    Constraints: 
+ *      *** CRITICAL: Unique constraint on (ShowId, SeatNumber) ***
+ *      This prevents double-booking of the same seat in the same show.
+ *      Enforced via database unique index + transaction isolation.
+ *      Required: BookingId, ShowId, SeatNumber, Category, Price.
+ *    Notes: 
+ *      - SeatNumber format: Letters + Numbers (A1, A2, ..., Z99)
+ *      - Category & Price stored for audit trail (prices may change after booking)
+ *      - IsActive allows soft cancellation without deleting record
+ *      - ShowId denormalized here for faster "get booked seats for show" queries
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * RELATIONSHIPS DIAGRAM
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ *   ApplicationUser
+ *       │
+ *       ├─ 1 ──→ N ──→ Booking
+ *       │
+ *       └─ (via Identity) Roles
+ * 
+ *   Movie
+ *       │
+ *       └─ 1 ──→ N ──→ Show
+ *
+ *   Theatre
+ *       │
+ *       └─ 1 ──→ N ──→ Screen
+ *
+ *   Screen
+ *       │
+ *       ├─ N ←─ 1 ←─ Theatre
+ *       │
+ *       └─ 1 ──→ N ──→ Show
+ *
+ *   Show
+ *       ├─ N ←─ 1 ←─ Movie
+ *       ├─ N ←─ 1 ←─ Screen
+ *       ├─ 1 ──→ N ──→ SeatPrice
+ *       ├─ 1 ──→ N ──→ Booking
+ *       └─ 1 ──→ N ──→ BookedSeat
+ *
+ *   Booking
+ *       ├─ N ←─ 1 ←─ ApplicationUser
+ *       ├─ N ←─ 1 ←─ Show
+ *       └─ 1 ──→ N ──→ BookedSeat
+ *
+ *   BookedSeat
+ *       ├─ N ←─ 1 ←─ Booking
+ *       └─ N ←─ 1 ←─ Show
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * KEY CONSTRAINTS & VALIDATIONS
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * PRIMARY KEYS:        All entities use int auto-increment (except ApplicationUser uses GUID)
+ * FOREIGN KEYS:        All defined with [ForeignKey] and virtual navigations
+ * UNIQUE CONSTRAINTS:  
+ *    - BookedSeat: (ShowId, SeatNumber) – CRITICAL for preventing double-booking
+ *    - SeatPrice: (ShowId, Category) – Optional, prevents duplicate price categories
+ *    - Screen: (TheatreId, Name) – Optional, prevents duplicate screen names
+ * 
+ * DATA ANNOTATIONS:
+ *    - [Required] on: Title, Name, Address fields, ShowId, UserId, etc.
+ *    - [StringLength] on all text fields
+ *    - [Range] on numeric fields (DurationMinutes, TotalSeats, Price)
+ *    - [Url] on PosterUrl, TrailerUrl
+ *    - [RegularExpression] on SeatNumber (pattern: [A-Za-z]+\d+)
+ *    - [Column(TypeName = "decimal(10,2)")] on Price, TotalAmount
+ * 
+ * SOFT DELETE:
+ *    - ApplicationUser.IsActive
+ *    - Movie.IsActive
+ *    - Theatre.IsActive
+ *    - Screen.IsActive
+ *    - Show.IsActive
+ *    - Booking.IsActive
+ *    - BookedSeat.IsActive
+ *    → EF Core queries should filter: .Where(x => x.IsActive)
+ * 
+ * DEFAULT VALUES:
+ *    - IsActive: true (all entities)
+ *    - CreatedAt: DateTime.UtcNow (all entities)
+ *    - Booking.Status: "Pending"
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * BUSINESS LOGIC NOTES
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * BOOKING FLOW:
+ *    1. User selects movie/show/seats
+ *    2. JavaScript AJAX: GET /api/booking/seat-status/{showId} → list of booked seats
+ *    3. JavaScript: Display seat grid, mark booked/available/selected
+ *    4. User clicks "Book Now"
+ *    5. JavaScript AJAX: POST /api/booking/reserve-seats {showId, selectedSeats[], totalAmount}
+ *    6. Controller (Transaction):
+ *       a. Verify selected seats are still available (pessimistic lock or unique constraint)
+ *       b. Create Booking record with Status="Pending"
+ *       c. Create BookedSeat rows for each selected seat
+ *       d. COMMIT if all OK
+ *    7. Return success/redirect to confirmation page
+ * 
+ * DOUBLE-BOOKING PREVENTION:
+ *    - Database unique index: BookedSeat(ShowId, SeatNumber)
+ *    - If two users try to book same seat simultaneously:
+ *      → First INSERT succeeds, second fails with constraint violation
+ *      → Handle with try-catch, return error: "Seat(s) already booked, please refresh"
+ *    - Optional: Implement seat-hold timeout (not in scope for MVP)
+ * 
+ * PRICE CALCULATION:
+ *    - Retrieve SeatPrice for each seat's category in the selected show
+ *    - TotalAmount = SUM(booked_seats[i].Price for i in selected_seats)
+ *    - Validate on client (JavaScript) and server (C#) side
+ * 
+ * ADMIN RESPONSIBILITIES:
+ *    - Create theatres, screens, seat layouts
+ *    - Add movies and shows (time slots)
+ *    - Set seat prices per show per category
+ *    - Monitor bookings and generate reports
+ * 
+ * USER RESPONSIBILITIES:
+ *    - Register/login
+ *    - Browse movies by theatre/date/genre (future: search/filter)
+ *    - View available shows
+ *    - Select and book seats
+ *    - View booking history
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * NOTES FOR DEVELOPMENT
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * • All entities use virtual navigation properties for lazy loading / eager loading.
+ * • Entity classes are in Models/ namespace.
+ * • DbContext (Phase 2) will define DbSets and OnModelCreating configurations.
+ * • Currency unit is flexible (USD, INR, EUR, etc.) — stored as decimal(10,2).
+ * • Dates/times use DateTime (stored as UTC, display in local time in Views).
+ * • No soft-delete is enforced globally; queries should manually filter IsActive = true.
+ * • Future: Implement IQueryable extension methods for common soft-delete patterns.
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ */

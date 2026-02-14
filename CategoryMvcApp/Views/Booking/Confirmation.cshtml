@@ -1,0 +1,400 @@
+@model BookingConfirmationViewModel
+
+@{
+    ViewData["Title"] = "Booking Confirmation";
+}
+
+<!-- Canvas Confetti Library -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.0/dist/confetti.browser.min.js"></script>
+<!-- SweetAlert2 Library -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.all.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+
+<div class="container mt-4">
+    <!-- Thank You Message (Fade-in) -->
+    <div class="alert alert-info alert-dismissible fade show thank-you-message" role="alert" style="opacity: 0; animation: fadeInDown 1s ease-in-out 0.5s forwards;">
+        <h5 class="text-center mb-0">🎉 Thank You for Your Booking!</h5>
+    </div>
+
+    <!-- Success Banner -->
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <h4 class="alert-heading">✅ Booking Confirmed!</h4>
+        <p>Your ticket booking has been confirmed successfully. Your confirmation details are below.</p>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- Confirmation Number & Download -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="confirmation-header">
+                <h1>🎬 Booking Confirmation</h1>
+                <p class="confirmation-number">
+                    <strong>Confirmation #:</strong> @Model.ConfirmationNumber
+                </p>
+                <p class="text-muted">
+                    <strong>Booked on:</strong> @Model.BookingDateTime.ToString("MMMM d, yyyy - h:mm tt")
+                </p>
+            </div>
+        </div>
+        <div class="col-md-4 text-right">
+            <button class="btn btn-outline-primary" onclick="window.print()">
+                🖨️ Print Ticket
+            </button>
+            <button class="btn btn-success" onclick="downloadPDF()">
+                <i class="bi bi-download"></i> Download PDF
+            </button>
+            <a href="/" class="btn btn-secondary">Back to Home</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Confirmation Card -->
+        <div class="col-lg-8">
+            <!-- Movie & Show Details -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Movie Details</h5>
+                    <div class="row">
+                        <div class="col-md-3">
+                            @if (!string.IsNullOrEmpty(Model.PosterUrl))
+                            {
+                                <img src="@Model.PosterUrl" alt="@Model.MovieTitle" 
+                                     class="img-fluid rounded" style="max-height: 150px; object-fit: cover;" />
+                            }
+                        </div>
+                        <div class="col-md-9">
+                            <h4>@Model.MovieTitle</h4>
+                            <p class="mb-2">
+                                <strong>Theatre:</strong> @Model.TheatreName<br />
+                                <strong>Screen:</strong> @Model.ScreenName<br />
+                                <strong>Show Date & Time:</strong> 
+                                @Model.ShowTime.ToString("dddd, MMMM d, yyyy - h:mm tt")<br />
+                                <strong>Status:</strong> 
+                                <span class="badge bg-success">@Model.Status</span>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Booked Seats -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Your Seats</h5>
+                    <div class="seats-list">
+                        @if (Model.Seats != null && Model.Seats.Any())
+                        {
+                            <div class="row">
+                                @foreach (var seat in Model.Seats)
+                                {
+                                    <div class="col-md-4 mb-3">
+                                        <div class="seat-card p-3" style="border: 1px solid #ddd; border-radius: 8px;">
+                                            <div style="font-size: 18px; font-weight: bold; color: #2196f3;">
+                                                Seat @seat.SeatNumber
+                                            </div>
+                                            <div class="text-muted">
+                                                @seat.Category
+                                            </div>
+                                            <div style="margin-top: 8px; font-size: 16px; color: #28a745;">
+                                                ₹@seat.Price.ToString("0.00")
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted">No seats booked.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notes -->
+            @if (!string.IsNullOrEmpty(Model.Notes))
+            {
+                <div class="card mb-4">
+                    <div class="card-body">
+                        <h5 class="card-title">Notes</h5>
+                        <p>@Model.Notes</p>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- Sidebar: Summary -->
+        <div class="col-lg-4">
+            <div class="confirmation-summary card sticky-top" style="top: 20px;">
+                <div class="card-body">
+                    <h5 class="card-title">Booking Summary</h5>
+
+                    <div class="summary-item">
+                        <span>Number of Seats:</span>
+                        <strong>@Model.Seats.Count()</strong>
+                    </div>
+
+                    <div class="summary-item">
+                        <span>Seat Numbers:</span>
+                        <strong>@string.Join(", ", Model.Seats.Select(s => s.SeatNumber))</strong>
+                    </div>
+
+                    <hr />
+
+                    <!-- Price Breakdown -->
+                    <h6 class="mb-3">Price Breakdown</h6>
+                    @foreach (var seatCategory in Model.Seats.GroupBy(s => s.Category))
+                    {
+                        <div class="breakdown-row">
+                            <span>@seatCategory.Key (×@seatCategory.Count()):</span>
+                            <strong>₹@(seatCategory.Sum(s => s.Price).ToString("0.00"))</strong>
+                        </div>
+                    }
+
+                    <hr />
+
+                    <!-- Total -->
+                    <div class="total-row">
+                        <span><strong>Total Amount:</strong></span>
+                        <h4 style="color: #28a745; margin: 8px 0 0 0;">
+                            ₹@Model.TotalAmount.ToString("0.00")
+                        </h4>
+                    </div>
+
+                    <hr />
+
+                    <p class="text-muted small">
+                        <strong>Booking ID:</strong> @Model.BookingId<br />
+                        <strong>Confirmation #:</strong> @Model.ConfirmationNumber
+                    </p>
+
+                    <!-- Action Buttons -->
+                    <a href="/" class="btn btn-primary w-100 mb-2">
+                        Book More Tickets
+                    </a>
+                    <a href="@Url.Action("History", "Booking")" class="btn btn-outline-secondary w-100">
+                        View My Bookings
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Important Notes -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="alert alert-info" role="alert">
+                <h5 class="alert-heading">ℹ️ Important Information</h5>
+                <ul class="mb-0">
+                    <li>Please arrive at the theatre 15 minutes before the showtime</li>
+                    <li>Your seat numbers have been reserved and will be held until the show starts</li>
+                    <li>Present this confirmation number at the ticket counter to collect your tickets</li>
+                    <li>For cancellations, visit your booking history within 24 hours before the show</li>
+                    <li>A confirmation email has been sent to your registered email address</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Styles -->
+<style>
+    .confirmation-header {
+        border-bottom: 2px solid #ddd;
+        padding-bottom: 20px;
+    }
+
+    .confirmation-header h1 {
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .confirmation-number {
+        font-size: 16px;
+        margin: 10px 0;
+    }
+
+    .seat-card {
+        transition: all 0.3s ease;
+    }
+
+    .seat-card:hover {
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .summary-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .summary-item:last-child {
+        border-bottom: none;
+    }
+
+    .breakdown-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        font-size: 14px;
+    }
+
+    .total-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 0;
+        font-size: 16px;
+    }
+
+    .confirmation-summary {
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+    }
+
+    @media print {
+        .alert-dismissible,
+        .btn,
+        .text-right,
+        .alert {
+            display: none;
+        }
+
+        .container {
+            max-width: 100%;
+        }
+
+        .card {
+            page-break-inside: avoid;
+            border: 1px solid #ddd;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .confirmation-summary {
+            position: static !important;
+            margin-top: 20px;
+        }
+
+        .text-right {
+            text-align: left;
+            margin-top: 20px;
+        }
+
+        .btn {
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+    }
+
+    /* Fade-in animations */
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .thank-you-message {
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.25);
+    }
+</style>
+
+<!-- Success Toast & Animations Script -->
+<script>
+    // Trigger all success animations when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        // Show success toast with SweetAlert2
+        showSuccessToast();
+        // Fire confetti celebration
+        triggerConfetti();
+    });
+
+    // SweetAlert2 Success Toast
+    function showSuccessToast() {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true,
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+
+        Toast.fire({
+            icon: 'success',
+            title: 'Booking Successful!',
+            html: '<strong>Your seat(s) have been reserved</strong><br>Check your email for confirmation.',
+            background: '#d4edda',
+            color: '#155724',
+            iconColor: '#28a745'
+        });
+    }
+
+    // Download PDF (enhanced print)
+    function downloadPDF() {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 2000
+        });
+        
+        Toast.fire({
+            icon: 'info',
+            title: 'Generating PDF...',
+            background: '#d1ecf1',
+            color: '#0c5460',
+            iconColor: '#17a2b8'
+        });
+        
+        // Trigger print dialog (which can be saved as PDF)
+        setTimeout(() => {
+            window.print();
+        }, 500);
+    }
+
+    function triggerConfetti() {
+        const duration = 3000;
+        const animationEnd = Date.now() + duration;
+
+        function randomInRange(min, max) {
+            return Math.random() * (max - min) + min;
+        }
+
+        (function frame() {
+            confetti({
+                particleCount: 100,
+                angle: randomInRange(55, 125),
+                spread: randomInRange(50, 70),
+                origin: { x: 0.5, y: 0.3 },
+                velocity: randomInRange(25, 45),
+                ticks: 200
+            });
+
+            if (Math.random() < 0.2) {
+                confetti({
+                    particleCount: 50,
+                    angle: randomInRange(0, 360),
+                    spread: 100,
+                    origin: { x: randomInRange(0.1, 0.9), y: 0.5 },
+                    velocity: randomInRange(15, 35),
+                    ticks: 150
+                });
+            }
+
+            if (Date.now() < animationEnd) {
+                requestAnimationFrame(frame);
+            }
+        }());
+    }
+</script>

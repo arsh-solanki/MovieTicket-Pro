@@ -1,0 +1,218 @@
+/*
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * PHASE 2 – DBCONTEXT & CONFIGURATION – SUMMARY
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * Project: Movie Ticket Management System (Academic Project, 2025–2026)
+ * Implemented: DbContext, Entity Configurations, Seed Data, Program.cs Setup
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * WHAT WAS IMPLEMENTED
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * 1. ApplicationDbContext (Data/ApplicationDbContext.cs)
+ *    ├─ Inherits: IdentityDbContext<ApplicationUser>
+ *    ├─ DbSets: 7 custom entities (Movie, Theatre, Screen, Show, SeatPrice, Booking, BookedSeat)
+ *    ├─ OnModelCreating:
+ *    │  ├─ Fluent API configuration for all entities
+ *    │  ├─ Relationship definitions (1:N, N:1, with cascade delete)
+ *    │  ├─ Unique indexes:
+ *    │  │  ├─ BookedSeat(ShowId, SeatNumber) – *** CRITICAL for preventing double-booking ***
+ *    │  │  ├─ SeatPrice(ShowId, Category)
+ *    │  │  └─ Screen(TheatreId, Name)
+ *    │  │  └─ Theatre(Name, City)
+ *    │  ├─ Performance indexes on foreign keys and search columns
+ *    │  ├─ Default values (IsActive=true, CreatedAt=GETUTCDATE())
+ *    │  └─ Seed data: Roles (Admin, User) + Admin user
+ *    │
+ *    └─ Seed Method: SeedRolesAndAdminUser()
+ *       ├─ Creates "Admin" and "User" roles
+ *       ├─ Creates admin@movie.com user with password "Admin@123!"
+ *       ├─ Assigns Admin role to admin user
+ *       └─ Uses PasswordHasher<ApplicationUser> for secure password storage
+ * 
+ * 2. Program.cs Configuration
+ *    ├─ DbContext registration with SQL Server provider
+ *    ├─ Identity setup with:
+ *    │  ├─ Password policy (length, digits, special chars, case requirements)
+ *    │  ├─ Lockout settings (5 max attempts, 5 min lockout)
+ *    │  ├─ Email confirmation not required (can enable later)
+ *    │  └─ Entity Framework stores + default token providers
+ *    ├─ Authentication & Authorization middleware (in correct order)
+ *    └─ Controllers + Views + Razor Pages services
+ * 
+ * 3. appsettings.json
+ *    ├─ Connection string: "Server=(localdb)\\mssqllocaldb;Database=MovieTicketDb;..."
+ *    ├─ Logging configuration with EF Core SQL command logging
+ *    └─ AllowedHosts (wildcard)
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * ENTITY RELATIONSHIPS (FLUENT API CONFIGURATIONS)
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * ApplicationUser (Identity)
+ *    └─ 1 → * Bookings (User has many bookings)
+ * 
+ * Movie
+ *    └─ 1 → * Shows (Movie has many show times)
+ * 
+ * Theatre
+ *    └─ 1 → * Screens (Theatre has many screens/auditoriums)
+ * 
+ * Screen
+ *    ├─ * → 1 Theatre (Many screens belong to one theatre)
+ *    └─ 1 → * Shows (Screen has many show times)
+ * 
+ * Show
+ *    ├─ * → 1 Movie (Many shows for one movie)
+ *    ├─ * → 1 Screen (Many shows on one screen)
+ *    ├─ 1 → * SeatPrices (Show has multiple seat price categories)
+ *    ├─ 1 → * Bookings (Show has many bookings)
+ *    └─ 1 → * BookedSeats (Show has many booked seats)
+ * 
+ * SeatPrice
+ *    └─ * → 1 Show (Many prices belong to one show)
+ * 
+ * Booking
+ *    ├─ * → 1 ApplicationUser (Many bookings by one user)
+ *    ├─ * → 1 Show (Many bookings for one show)
+ *    └─ 1 → * BookedSeats (Booking has multiple booked seats)
+ * 
+ * BookedSeat
+ *    ├─ * → 1 Booking (Many booked seats in one booking)
+ *    └─ * → 1 Show (Many booked seats for one show)
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * UNIQUE INDEXES (PREVENT DATA INTEGRITY ISSUES)
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * 1. BookedSeat(ShowId, SeatNumber) – PRIMARY CONSTRAINT
+ *    Purpose: Ensures a seat in a show can only be booked once
+ *    Behavior: INSERT fails if same (ShowId, SeatNumber) exists
+ *    Error Handling: Catch DbUpdateException, return "Seat already booked" message
+ *    Why: Prevents race conditions & double-booking simultaneous requests
+ * 
+ * 2. SeatPrice(ShowId, Category)
+ *    Purpose: Each show has only one price per seat category
+ *    Behavior: No duplicate (Silver, Gold, etc.) prices per show
+ * 
+ * 3. Screen(TheatreId, Name)
+ *    Purpose: Screen names are unique per theatre (e.g., no two "Screen 1" in same theatre)
+ *    Behavior: INSERT fails if theatre already has a screen with same name
+ * 
+ * 4. Theatre(Name, City)
+ *    Purpose: Prevent duplicate theatre entries in same city
+ *    Behavior: INSERT fails if (Name, City) combo already exists
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * KEY CONFIGURATIONS
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * DATABASE DEFAULTS:
+ * • IsActive = true (all entities) – soft delete support
+ * • CreatedAt = GETUTCDATE() – auto-timestamp on insert
+ * • BookingStatus = Pending – default booking status
+ * 
+ * CASCADE DELETE:
+ * • Movie → Shows → SeatPrices, Bookings, BookedSeats (cascade delete)
+ * • Theatre → Screens → Shows (cascade delete)
+ * • Screen → Shows (cascade delete)
+ * • Show → SeatPrices, Bookings, BookedSeats (cascade delete)
+ * • Booking → BookedSeats (cascade delete)
+ * • User → Bookings (cascade delete, careful with real data!)
+ * 
+ * INDEXES FOR PERFORMANCE:
+ * • Movie: IsActive, Title
+ * • Theatre: (Name, City), IsActive
+ * • Screen: (TheatreId, Name), IsActive
+ * • Show: (MovieId, ScreenId, StartDateTime), IsActive
+ * • Booking: (UserId, ShowId), Status, IsActive
+ * • BookedSeat: (ShowId, SeatNumber) [UNIQUE], BookingId, IsActive
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * IDENTITY & AUTHENTICATION SETUP
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * Roles:
+ * • "Admin" – Can manage movies, theatres, screens, shows, view reports
+ * • "User" – Can browse, search, and book tickets
+ * 
+ * Default Admin User:
+ * • Email: admin@movie.com
+ * • Username: admin@movie.com
+ * • Password: Admin@123!
+ * • Role: Admin
+ * • Created on: Migration applied (seed data)
+ * 
+ * Password Policy:
+ * • Minimum 6 characters
+ * • Must contain digit
+ * • Must contain non-alphanumeric (!@#$%^&* etc.)
+ * • Must contain uppercase letter
+ * • Must contain lowercase letter
+ * 
+ * Account Lockout:
+ * • Max 5 failed login attempts
+ * • 5-minute lockout duration
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * COLUMN TYPE SPECIFICATIONS
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * Money/Prices:
+ * • Type: decimal(10, 2)
+ * • Used in: SeatPrice.Price, Booking.TotalAmount, BookedSeat.Price
+ * • Range: 0.01 to 9,999,999.99 (in currency units)
+ * 
+ * Large Text:
+ * • LayoutJson in Screen: nvarchar(max), stores JSON seat layout config
+ * 
+ * String Lengths:
+ * • Movie.Title: nvarchar(200)
+ * • Theatre.Name: nvarchar(150)
+ * • Screen.Name: nvarchar(100)
+ * • SeatPrice.Category: nvarchar(50)
+ * • BookedSeat.SeatNumber: nvarchar(10) – e.g., "A12", "Z99"
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * NEXT STEPS (AFTER PHASE 2)
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * 1. Create & Apply Migration:
+ *    $ dotnet ef migrations add InitialCreate
+ *    $ dotnet ef database update
+ * 
+ * 2. Verify Database:
+ *    - Check SQL Server: tables created, seed data inserted
+ *    - Verify unique indexes on BookedSeat, SeatPrice, Screen, Theatre
+ *    - Check that Admin role and admin@movie.com user exist
+ * 
+ * 3. Proceed to Phase 3:
+ *    - Brief Identity & role-based authorization setup
+ *    - Update existing controllers if needed
+ *    - Create/update middleware for authentication
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * TESTING THE DATABASE SETUP
+ * ═════════════════════════════════════════════════════════════════════════════════
+ * 
+ * After applying migration, test with:
+ * 
+ * // In a controller or service
+ * using (var db = new ApplicationDbContext(options))
+ * {
+ *     // Verify Admin user exists
+ *     var adminUser = await db.Users
+ *         .FirstOrDefaultAsync(u => u.UserName == "admin@movie.com");
+ *     
+ *     // Verify Admin role exists
+ *     var adminRole = await db.Roles
+ *         .FirstOrDefaultAsync(r => r.Name == "Admin");
+ *     
+ *     // Verify user is in Admin role
+ *     var isAdmin = await db.UserRoles
+ *         .AnyAsync(ur => ur.UserId == adminUser.Id && ur.RoleId == adminRole.Id);
+ * }
+ * 
+ * ═════════════════════════════════════════════════════════════════════════════════
+ */

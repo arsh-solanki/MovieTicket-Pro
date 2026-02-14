@@ -1,0 +1,275 @@
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 4 – VIEWMODELS & DTOS: QUICK START GUIDE
+═══════════════════════════════════════════════════════════════════════════════
+
+PROJECT PHASE: 4 of 6
+ESTIMATED TIME: 20–30 minutes integration time (ViewModels already created)
+
+═══════════════════════════════════════════════════════════════════════════════
+WHAT WAS CREATED IN PHASE 4
+═══════════════════════════════════════════════════════════════════════════════
+
+✅ ViewModels (8 files in ViewModels/ folder):
+  • MovieCardViewModel           (Home page grid display)
+  • MovieDetailViewModel         (Movie details + available shows)
+  • ShowListItemViewModel        (Compact show display in lists)
+  • ShowDetailViewModel          (Show info before seat selection)
+  • SeatCategoryPriceViewModel   (Price tier information)
+  • SeatSelectionViewModel       (Core seat booking page)
+  • BookingConfirmationViewModel (Post-booking confirmation)
+  • BookingHistoryItemViewModel  (User's booking history list)
+
+✅ DTOs (2 files in ViewModels/DTOs/ folder):
+  • ReserveSeatsRequest          (AJAX POST input)
+  • ReserveSeatsResponse         (AJAX POST response)
+
+All classes include:
+  • Data annotations ([Required], [StringLength], [Url], [DataType], etc.)
+  • [Display(Name = "...")] for strongly-typed form rendering
+  • Comprehensive XML documentation (/// comments)
+  • Usage examples in comments
+  • Entity → ViewModel mapping examples
+
+═══════════════════════════════════════════════════════════════════════════════
+IMMEDIATE NEXT STEPS
+═══════════════════════════════════════════════════════════════════════════════
+
+1. Compile the project to ensure no errors:
+   dotnet build
+
+2. You now have ViewModels ready for:
+   • Controllers/HomeController.cs – Return List<MovieCardViewModel>
+   • Controllers/MoviesController.cs (if creating) – Return MovieDetailViewModel
+   • Controllers/BookingController.cs (Phase 5) – Return SeatSelectionViewModel
+
+3. Read PHASE4_VIEWMODELS_REFERENCE.txt for detailed mapping info
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 5 PREVIEW (Next Phase)
+═══════════════════════════════════════════════════════════════════════════════
+
+Phase 5 will create BookingController with these actions:
+
+[HttpGet] ShowDetails(int showId)
+  ├─ Load Show + Movie + Theatre + Screen + SeatPrice
+  ├─ Map to ShowDetailViewModel
+  └─ Return View("ShowDetails", vm)
+
+[HttpGet] SelectSeats(int showId)
+  ├─ Load Show + Movie + Screen + SeatPrice + BookedSeats
+  ├─ Map to SeatSelectionViewModel
+  └─ Return View("SelectSeats", vm)
+
+[HttpPost] ReserveSeats([FromBody] ReserveSeatsRequest request)
+  ├─ Validate show exists
+  ├─ Check seat availability
+  ├─ Create Booking + BookedSeats (in transaction)
+  ├─ Calculate TotalAmount
+  ├─ Return Json(new ReserveSeatsResponse { Success = true, BookingId = ... })
+  └─ On error: return Json(response { Success = false, Message = "...", ErrorDetails = "..." })
+
+[HttpGet] Confirmation(int bookingId)
+  ├─ Load Booking + Show + Movie + Theatre + Screen + BookedSeats
+  ├─ Map to BookingConfirmationViewModel
+  └─ Return View("Confirmation", vm)
+
+═══════════════════════════════════════════════════════════════════════════════
+EXAMPLE: UPDATING HomeController.Index WITH PHASE 4 VIEWMODELS
+═══════════════════════════════════════════════════════════════════════════════
+
+Current HomeController.cs might look like:
+
+    public class HomeController : Controller
+    {
+        private readonly ApplicationDbContext _context;
+
+        public HomeController(ApplicationDbContext context)
+        {
+            _context = context;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var movies = await _context.Movies
+                .Where(m => m.IsActive)
+                .ToListAsync();
+
+            // NOW WITH PHASE 4 VIEWMODELS:
+            var vm = movies.Select(m => new MovieCardViewModel
+            {
+                Id = m.Id,
+                Title = m.Title,
+                PosterUrl = m.PosterUrl,
+                ReleaseDate = m.ReleaseDate,
+                Description = m.Description.Length > 100 
+                    ? m.Description.Substring(0, 100) + "..." 
+                    : m.Description,
+                IsActive = m.IsActive
+            }).ToList();
+
+            return View(vm);
+        }
+
+        public IActionResult Privacy()
+        {
+            return View();
+        }
+
+        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        public IActionResult Error()
+        {
+            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        }
+    }
+
+Then update Views/Home/Index.cshtml:
+
+    @model List<CategoryMvcApp.ViewModels.MovieCardViewModel>
+
+    <div class="container mt-5">
+        <h1>Now Showing</h1>
+        <div class="row">
+            @foreach (var movie in Model)
+            {
+                <div class="col-md-4 mb-4">
+                    <div class="card h-100">
+                        <img src="@movie.PosterUrl" class="card-img-top" alt="@movie.Title" />
+                        <div class="card-body">
+                            <h5 class="card-title">@movie.Title</h5>
+                            <p class="card-text">@movie.Description</p>
+                            <p class="text-muted">@movie.ReleaseDate.ToShortDateString()</p>
+                            <a href="/Movies/Details/@movie.Id" class="btn btn-primary">View Shows</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+
+═══════════════════════════════════════════════════════════════════════════════
+KEY POINTS FOR PHASE 4
+═══════════════════════════════════════════════════════════════════════════════
+
+1. ViewModels are TRANSFER OBJECTS between Controller and View
+   • Don't use Entity models directly in views → use ViewModels
+   • ViewModels have only data view needs (lighter, more flexible)
+
+2. DTOs for AJAX are separate (ReserveSeatsRequest/Response)
+   • Handles JSON serialization/deserialization
+   • Model binding with [FromBody] attribute
+
+3. All ViewModels are strongly-typed
+   • Enable @model directive in Razor views
+   • Compile-time checking + IntelliSense
+   • Safe HTML encoding automatically
+
+4. Data Annotations do 3 things:
+   • Validation (Required, StringLength, Range, Url, Regex, etc.)
+   • Display (Name, Format, Description for form labels)
+   • Mapping ([ForeignKey], [Display], [DataType], etc.)
+
+═══════════════════════════════════════════════════════════════════════════════
+FOLDER STRUCTURE AFTER PHASE 4
+═══════════════════════════════════════════════════════════════════════════════
+
+CategoryMvcApp/
+├── Models/
+│   ├── Category.cs
+│   ├── ErrorViewModel.cs
+│   ├── ApplicationUser.cs          ← (Phase 1)
+│   ├── Movie.cs                    ← (Phase 1)
+│   ├── Theatre.cs                  ← (Phase 1)
+│   ├── Screen.cs                   ← (Phase 1)
+│   ├── Show.cs                     ← (Phase 1)
+│   ├── SeatPrice.cs                ← (Phase 1)
+│   ├── Booking.cs                  ← (Phase 1)
+│   ├── BookedSeat.cs               ← (Phase 1)
+│   └── BookingStatus.cs            ← (Phase 2)
+├── ViewModels/                     ← NEW (Phase 4)
+│   ├── MovieCardViewModel.cs
+│   ├── MovieDetailViewModel.cs
+│   ├── ShowListItemViewModel.cs
+│   ├── ShowDetailViewModel.cs
+│   ├── SeatCategoryPriceViewModel.cs
+│   ├── SeatSelectionViewModel.cs
+│   ├── BookingConfirmationViewModel.cs
+│   ├── BookingHistoryItemViewModel.cs
+│   └── DTOs/
+│       ├── ReserveSeatsRequest.cs
+│       └── ReserveSeatsResponse.cs
+├── Controllers/
+│   ├── HomeController.cs           ← (Update to use MovieCardViewModel)
+│   └── (Will add BookingController in Phase 5)
+├── Views/
+│   ├── Home/
+│   │   ├── Index.cshtml            ← (Update to @model List<MovieCardViewModel>)
+│   │   └── Privacy.cshtml
+│   ├── Movies/                     ← (NEW - for Movies/Details, Movies/List)
+│   ├── Booking/                    ← (NEW - for SelectSeats, Confirmation)
+│   ├── UserProfile/                ← (NEW - for BookingHistory)
+│   └── Shared/
+│       ├── _Layout.cshtml
+│       ├── _LoginPartial.cshtml
+│       └── _Layout.cshtml.css
+├── Areas/
+│   ├── Admin/
+│   │   ├── Controllers/
+│   │   │   └── DashboardController.cs
+│   │   └── Views/
+│   │       ├── Dashboard/
+│   │       │   └── Index.cshtml
+│   │       └── Shared/
+│   │           └── _AdminLayout.cshtml
+│   └── Identity/
+│       └── Pages/Account/
+│           ├── Login.cshtml
+│           ├── Register.cshtml
+│           └── ... (other scaffolded identity pages)
+├── Data/
+│   └── ApplicationDbContext.cs     ← (Phase 2)
+├── Program.cs                      ← (Phase 2 & 3)
+├── appsettings.json
+└── (other files)
+
+═══════════════════════════════════════════════════════════════════════════════
+COMPILATION TEST
+═══════════════════════════════════════════════════════════════════════════════
+
+After Phase 4, run:
+
+    dotnet build
+
+Expected output:
+    Microsoft (R) Build Engine version 17.x
+    Build started ...
+    ...
+    Build succeeded.
+
+If there are errors, they're likely:
+  • Missing using statements in controllers
+  • Typos in entity property names
+  • Missing or incorrect DbSet names
+
+═══════════════════════════════════════════════════════════════════════════════
+WHEN TO PROCEED TO PHASE 5
+═══════════════════════════════════════════════════════════════════════════════
+
+Ready for Phase 5 when:
+  ✅ ViewModels compile without errors
+  ✅ You understand ViewModel → Entity mapping
+  ✅ You're ready to create BookingController
+  ✅ (Optional) You've updated HomeController.Index to use MovieCardViewModel
+
+Phase 5 deliverables will be:
+  ✅ BookingController.cs with all booking actions
+  ✅ Views/Booking/SelectSeats.cshtml with jQuery/AJAX seat selection
+  ✅ Views/Booking/Confirmation.cshtml
+  ✅ JavaScript for seat grid rendering and AJAX calls
+  ✅ Comprehensive booking transaction example
+
+═══════════════════════════════════════════════════════════════════════════════
+
+PHASE 4 STATUS: ✅ COMPLETE
+All ViewModels & DTOs created and ready for Phase 5 integration.
+
+═══════════════════════════════════════════════════════════════════════════════

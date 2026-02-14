@@ -1,0 +1,532 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                    PHASE 3 IMPLEMENTATION SUMMARY                              ║
+║                                                                                    ║
+║              Identity & Role-Based Authorization (Complete)                     ║
+║                                                                                    ║
+║              Movie Ticket Management System – ASP.NET Core MVC                  ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+═════════════════════════════════════════════════════════════════════════════════
+  PHASE 3 STATUS: ✅ COMPLETE
+═════════════════════════════════════════════════════════════════════════════════
+
+Everything is configured and ready for Identity UI scaffolding.
+
+═════════════════════════════════════════════════════════════════════════════════
+  DELIVERABLES
+═════════════════════════════════════════════════════════════════════════════════
+
+FILE: Program.cs (FULLY CONFIGURED)
+─────────────────────────────────────
+
+✓ DbContext Registration
+  • SQL Server provider with connection string from appsettings.json
+
+✓ Identity Configuration
+  • AddIdentity<ApplicationUser, IdentityRole>
+  • Password policy:
+    - Minimum 6 characters
+    - Require digit (0-9)
+    - Require non-alphanumeric (!@#$%^&*)
+    - Require uppercase (A-Z)
+    - Require lowercase (a-z)
+  • Lockout settings:
+    - Maximum 5 failed login attempts
+    - 5-minute lockout duration
+  • Email uniqueness enforced
+  • AddDefaultUI() ← Critical for scaffolded Identity pages
+
+✓ Authorization Policies
+  • "AdminOnly" – Requires Admin role
+  • "UserOnly" – Requires User role
+
+✓ Service Registration
+  • AddControllersWithViews() – MVC support
+  • AddRazorPages() – For Identity pages
+
+✓ Middleware Pipeline
+  • app.UseAuthentication() BEFORE app.UseAuthorization() (CRITICAL)
+  • Proper error handling with UseExceptionHandler
+  • HTTPS redirection in non-development
+
+✓ Endpoint Routing
+  • MapRazorPages() – Identity pages
+  • Area route: {area:exists}/{controller=Dashboard}/{action=Index}/{id?}
+  • Default MVC route: {controller=Home}/{action=Index}/{id?}
+
+FILE: Areas/Admin/Controllers/DashboardController.cs
+─────────────────────────────────────────────────────
+
+✓ Admin-only controller
+  • [Area("Admin")] – Part of Admin area
+  • [Authorize(Roles = "Admin")] – Only admins can access
+  • Index() action returns admin dashboard view
+
+✓ Access route: /Admin or /Admin/Dashboard
+
+FILE: Areas/Admin/Views/Dashboard/Index.cshtml
+────────────────────────────────────────────────
+
+✓ Admin dashboard template
+  • Welcome message for admin users
+  • Quick-link cards to:
+    - Movies management
+    - Theatres management
+    - Shows management
+    - Bookings management
+  • Dashboard statistics section (placeholder for future data):
+    - Total bookings
+    - Active shows
+    - Registered users
+    - Total revenue
+  • Info alert with getting started tips
+  • Responsive Bootstrap 5 layout
+
+FILE: Areas/Admin/Views/Shared/_AdminLayout.cshtml
+───────────────────────────────────────────────────
+
+✓ Admin-specific layout template
+  • Admin header with gradient background
+  • Left sidebar with navigation menu
+  • User info section showing logged-in admin
+  • Main content area
+  • Dropdown menu with account settings and logout
+  • Bootstrap 5 + Font Awesome 6 styling
+  • Links to:
+    - Dashboard
+    - Movies
+    - Theatres
+    - Screens
+    - Shows
+    - Bookings
+    - Reports
+
+DOCUMENTATION FILES CREATED:
+────────────────────────────
+
+✓ PHASE3_IDENTITY_SCAFFOLDING_GUIDE.txt (Comprehensive)
+  • Step-by-step scaffolding instructions
+  • Tool installation
+  • Package installation
+  • Command execution
+  • Layout.cshtml update
+  • Role assignment explanation
+  • Security best practices
+  • Troubleshooting guide
+  • Testing procedures
+
+✓ PHASE3_REGISTER_OVERRIDE_REFERENCE.cs (Code Example)
+  • How to auto-assign "User" role on registration
+  • Code snippet ready to copy/paste
+  • Explanations for each change
+
+✓ PHASE3_COMPLETE.txt (Full Reference)
+  • Complete implementation overview
+  • Step-by-step scaffolding process
+  • Authentication & authorization flow
+  • Role-based authorization patterns
+  • Testing checklist
+  • Troubleshooting guide
+
+✓ PHASE3_QUICK_REFERENCE.txt (Quick Start)
+  • Quick setup checklist
+  • Key configurations summary
+  • Roles & access control overview
+  • Common endpoints
+  • Quick troubleshooting
+
+═════════════════════════════════════════════════════════════════════════════════
+  HOW TO PROCEED: STEP-BY-STEP SCAFFOLDING
+═════════════════════════════════════════════════════════════════════════════════
+
+STEP 1: Install Code Generator Tool (Global, One-Time Only)
+──────────────────────────────────────────────────────────
+
+Open terminal and run:
+
+    dotnet tool install -g dotnet-aspnet-codegenerator
+
+Expected output:
+    You can invoke the tool using the following command: dotnet-aspnet-codegenerator
+
+STEP 2: Add Required NuGet Package
+──────────────────────────────────
+
+In project directory, run:
+
+    dotnet add package Microsoft.VisualStudio.Web.CodeGeneration.Design
+
+Expected output:
+    Determining projects to restore...
+    Writing C:\Users\...\obj\project.assets.json
+    Restore complete (X ms).
+
+STEP 3: Scaffold Identity UI
+────────────────────────────
+
+In project directory, run:
+
+    dotnet aspnet-codegenerator identity -dc ApplicationDbContext
+
+When prompted about overwriting files, press Y (yes).
+
+Expected output:
+    Scaffolding identity to the project was added successfully.
+
+This creates:
+    Areas/Identity/Pages/Account/
+    ├── Login.cshtml & Login.cshtml.cs
+    ├── Register.cshtml & Register.cshtml.cs
+    ├── Logout.cshtml & Logout.cshtml.cs
+    ├── ForgotPassword.cshtml & ForgotPassword.cshtml.cs
+    ├── ResetPassword.cshtml & ResetPassword.cshtml.cs
+    ├── ConfirmEmail.cshtml & ConfirmEmail.cshtml.cs
+    ├── AccessDenied.cshtml
+    └── Manage/ (Profile settings, password change, etc.)
+
+STEP 4: Update Main Layout
+──────────────────────────
+
+Edit: Views/Shared/_Layout.cshtml
+
+Find the navbar section and locate the </ul> that closes the navbar links.
+
+Before that </ul>, add:
+
+    <partial name="_LoginPartial" />
+
+Example (showing context):
+
+    <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
+        <ul class="navbar-nav flex-grow-1">
+            <li class="nav-item">
+                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+            </li>
+        </ul>
+        
+        <partial name="_LoginPartial" />  <!-- ADD THIS LINE -->
+    </div>
+
+This displays login/logout links in the navbar.
+
+STEP 5: (Optional) Override Register.cshtml.cs
+───────────────────────────────────────────────
+
+If you want new users to automatically get the "User" role:
+
+Edit: Areas/Identity/Pages/Account/Register.cshtml.cs
+
+Find the OnPostAsync() method. Locate this code:
+
+    var result = await _userManager.CreateAsync(user, Input.Password);
+    if (result.Succeeded)
+    {
+        // ... existing code ...
+    }
+
+After "if (result.Succeeded)", add this code:
+
+    // Auto-assign "User" role
+    var roleResult = await _userManager.AddToRoleAsync(user, "User");
+    if (!roleResult.Succeeded)
+    {
+        foreach (var error in roleResult.Errors)
+        {
+            ModelState.AddModelError(string.Empty, error.Description);
+        }
+        return Page();
+    }
+
+See PHASE3_REGISTER_OVERRIDE_REFERENCE.cs for complete example.
+
+STEP 6: Build Project
+─────────────────────
+
+    dotnet build
+
+Expected: "Build succeeded"
+
+STEP 7: Run Project & Test
+──────────────────────────
+
+    dotnet run
+
+Navigate to:
+    https://localhost:xxxx/ (replace xxxx with actual port)
+
+Test these flows:
+
+✓ Homepage
+  • Should see navbar with "Login" link
+  • No username displayed (not authenticated)
+
+✓ Click "Login"
+  • Navigate to /Identity/Account/Login
+  • Form loads successfully
+
+✓ Login with admin user
+  • Email: admin@movie.com
+  • Password: Admin@123!
+  • Click Sign in
+
+✓ After login
+  • Navbar should show "admin@movie.com" with dropdown
+  • "Logout" option visible
+
+✓ Navigate to /Admin/Dashboard
+  • Should see admin dashboard
+  • Sidebar visible with menu links
+  • Dashboard statistics placeholder visible
+
+✓ Test unauthorized access
+  • Open new incognito/private browser tab
+  • Try to access /Admin/Dashboard
+  • Should redirect to /Identity/Account/Login?returnUrl=/Admin/Dashboard
+
+✓ Register new user (if override is implemented)
+  • Navigate to /Identity/Account/Register
+  • Create account: test@example.com / TestPass@123
+  • After registration, auto-login (if implemented)
+  • Try to access /Admin/Dashboard
+  • Should show "Access Denied" (only Admin role can access)
+
+═════════════════════════════════════════════════════════════════════════════════
+  WHAT HAPPENS AFTER SCAFFOLDING
+═════════════════════════════════════════════════════════════════════════════════
+
+New Endpoints Created:
+  • /Identity/Account/Login
+  • /Identity/Account/Register
+  • /Identity/Account/Logout
+  • /Identity/Account/ForgotPassword
+  • /Identity/Account/ResetPassword
+  • /Identity/Account/Manage
+  • /Identity/Account/Manage/ChangePassword
+  • ... (many other account management pages)
+
+Files Created:
+  • Areas/Identity/Pages/Account/*.cshtml & .cshtml.cs
+  • Areas/Identity/Pages/Account/Manage/*.cshtml & .cshtml.cs
+  • Areas/Identity/Pages/Shared/_LoginPartial.cshtml
+  • Areas/Identity/_ViewImports.cshtml
+  • Areas/Identity/_ViewStart.cshtml
+
+Navbar Changes:
+  • Shows "Login" when user is not authenticated
+  • Shows "Username | Logout" when authenticated
+
+Database Changes:
+  • None (tables already created in Phase 2)
+  • Uses existing AspNetUsers, AspNetRoles, AspNetUserRoles tables
+
+═════════════════════════════════════════════════════════════════════════════════
+  AUTHENTICATION FLOW (How It Works)
+═════════════════════════════════════════════════════════════════════════════════
+
+USER REQUEST:
+
+    User clicks "Login" → /Identity/Account/Login page loads
+
+USER ENTERS CREDENTIALS:
+
+    Email: admin@movie.com
+    Password: Admin@123!
+
+SERVER VALIDATES:
+
+    1. Middleware receives request
+    2. Identity validates password against hash in database
+    3. Password matches → Authentication succeeds
+    4. Creates authentication cookie
+
+MIDDLEWARE CREATES COOKIE:
+
+    • Cookie name: .AspNetCore.Identity.Application
+    • HttpOnly flag: Prevents JavaScript access
+    • Secure flag: HTTPS only in production
+    • SameSite: Prevents CSRF attacks
+
+SUBSEQUENT REQUESTS:
+
+    Cookie is sent with every request
+    Middleware reads cookie:
+    • User.Identity.IsAuthenticated = true
+    • User.Identity.Name = "admin@movie.com"
+    • User.Claims contains roles: Admin
+
+AUTHORIZATION CHECK:
+
+    Request to /Admin/Dashboard:
+    • [Authorize(Roles = "Admin")] checks
+    • Is user.Identity.IsAuthenticated? YES
+    • Is user in "Admin" role? YES
+    • Execute action: DashboardController.Index()
+    • Return view
+
+═════════════════════════════════════════════════════════════════════════════════
+  ROLES & AUTHORIZATION
+═════════════════════════════════════════════════════════════════════════════════
+
+TWO ROLES (Created in Phase 2 migration):
+
+1. "Admin"
+   • Can manage movies, theatres, screens, shows
+   • Can view bookings and generate reports
+   • Access: /Admin/* pages
+   • Default user: admin@movie.com (password: Admin@123!)
+
+2. "User"
+   • Can browse movies
+   • Can search shows
+   • Can book tickets
+   • Can view their own booking history
+   • Access: /Home, /Booking/*, /Identity/Account/Manage
+
+PUBLIC (No authentication required):
+   • /Home
+   • /Home/Index
+   • /Home/Privacy
+   • /Identity/Account/Login
+   • /Identity/Account/Register
+   • /Identity/Account/ForgotPassword
+
+═════════════════════════════════════════════════════════════════════════════════
+  PROTECTING ACTIONS WITH [Authorize]
+═════════════════════════════════════════════════════════════════════════════════
+
+REQUIRE ADMIN ROLE (Entire Controller):
+
+    [Area("Admin")]
+    [Authorize(Roles = "Admin")]
+    public class MoviesController : Controller
+    {
+        public IActionResult Index() { ... }
+        public IActionResult Create() { ... }
+        public IActionResult Edit(int id) { ... }
+        public IActionResult Delete(int id) { ... }
+    }
+
+REQUIRE USER ROLE (Specific Action):
+
+    [Authorize(Roles = "User")]
+    public IActionResult MyBookings() { ... }
+
+REQUIRE ANY AUTHENTICATION:
+
+    [Authorize]
+    public IActionResult Profile() { ... }
+
+ROW-LEVEL SECURITY (Users see only their data):
+
+    [Authorize]
+    public async Task<IActionResult> MyBookings()
+    {
+        var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+        var bookings = await _db.Bookings
+            .Where(b => b.UserId == userId && b.IsActive)
+            .ToListAsync();
+        return View(bookings);
+    }
+
+CHECK ROLE IN VIEW:
+
+    @if (User.IsInRole("Admin"))
+    {
+        <a href="/Admin/Dashboard">Admin Panel</a>
+    }
+
+═════════════════════════════════════════════════════════════════════════════════
+  SECURITY BEST PRACTICES
+═════════════════════════════════════════════════════════════════════════════════
+
+✓ ANTIFORGERY TOKENS
+  • All POST/PUT/DELETE actions must validate token
+  • Prevents CSRF (Cross-Site Request Forgery)
+  • Razor forms include automatically: @Html.AntiForgeryToken()
+
+✓ NEVER TRUST CLIENT-SIDE AUTHORIZATION
+  • Always verify role server-side
+  • JavaScript can be manipulated
+
+✓ ROW-LEVEL SECURITY
+  • Users should only see their own data
+  • Filter queries by User.FindFirst(ClaimTypes.NameIdentifier)?.Value
+
+✓ HTTPS IN PRODUCTION
+  • Always use HTTPS for authentication
+  • app.UseHsts(); enforces HTTPS redirects
+
+✓ PASSWORD HASHING
+  • Never store plain text passwords
+  • ASP.NET Core Identity handles hashing
+  • Password policy enforced: 6+ chars, digit, special, upper, lower
+
+✓ SECURE COOKIES
+  • HttpOnly: JavaScript cannot access
+  • Secure: HTTPS only (production)
+  • SameSite: CSRF protection
+
+═════════════════════════════════════════════════════════════════════════════════
+  TESTING CHECKLIST
+═════════════════════════════════════════════════════════════════════════════════
+
+□ Scaffolding commands executed successfully
+□ project builds without errors (dotnet build)
+□ Project runs (dotnet run)
+□ Homepage loads with navbar
+□ "Login" link visible in navbar (not authenticated)
+□ /Identity/Account/Login page accessible
+□ Admin login works: admin@movie.com / Admin@123!
+□ After login: navbar shows "admin@movie.com"
+□ Dropdown menu works with logout
+□ /Admin/Dashboard accessible after login
+□ Admin dashboard displays correctly with sidebar
+□ Unauthorized access redirects to login
+□ Register page works (if scaffolded correctly)
+□ New user registration creates user account
+□ New user auto-assigned "User" role (if override implemented)
+□ New user cannot access /Admin/Dashboard (authorization check)
+□ Logout works and clears session
+□ After logout: navbar shows "Login" again
+
+═════════════════════════════════════════════════════════════════════════════════
+  NEXT PHASES
+═════════════════════════════════════════════════════════════════════════════════
+
+After Phase 3 is complete and tested:
+
+PHASE 4: ViewModels & DTOs
+  • MovieCardViewModel
+  • ShowDetailViewModel
+  • SeatSelectionViewModel
+  • ReserveSeatsRequest/Response
+  • BookingConfirmationViewModel
+
+PHASE 5: BookingController (Core Feature)
+  • GET /api/booking/seat-status/{showId}
+  • POST /api/booking/reserve-seats
+  • GET /Booking/Confirmation/{bookingId}
+
+PHASE 6: Seat Selection View + jQuery/AJAX
+  • Views/Booking/SelectSeats.cshtml
+  • Seat grid visualization
+  • AJAX calls for booking
+
+PHASE 7: Admin CRUD Operations
+  • Movies CRUD
+  • Theatres CRUD
+  • Screens CRUD
+  • Shows CRUD
+  • Bookings view + Reports
+
+═════════════════════════════════════════════════════════════════════════════════
+
+✅ PHASE 3 COMPLETE & READY FOR SCAFFOLDING!
+
+Follow the step-by-step instructions above to scaffold Identity UI.
+All configuration is already in place in Program.cs and supporting files.
+
+Good luck! 🎬

@@ -1,0 +1,445 @@
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 4: COMPLETE – VIEWMODELS & DTOS
+═══════════════════════════════════════════════════════════════════════════════
+
+PROJECT PHASE: 4 of 6 ✅ COMPLETE
+DATE COMPLETED: 2026-02-07
+TOTAL FILES CREATED: 12 (10 ViewModels/DTOs + 2 documentation files)
+TOTAL LINES OF CODE: ~975 lines of well-documented, production-ready code
+
+═══════════════════════════════════════════════════════════════════════════════
+EXECUTIVE SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+Phase 4 has successfully implemented a complete, strongly-typed ViewModel and DTO
+layer for the Movie Ticket Management System. All ViewModels follow ASP.NET Core
+best practices with:
+
+✅ Data annotations for validation and display
+✅ Comprehensive XML documentation (/// comments)
+✅ Usage examples and mapping patterns in comments
+✅ Proper separation of concerns (Entity ≠ View)
+✅ AJAX integration patterns for ReserveSeatsRequest/Response
+✅ Nested ViewModels for complex data structures
+✅ Currency, date, and URL formatting support
+
+The system is now ready for Phase 5 (BookingController) implementation.
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 4 DELIVERABLES (12 Files)
+═══════════════════════════════════════════════════════════════════════════════
+
+VIEWMODELS (8 files in ViewModels/ folder):
+────────────────────────────────────────────────────────────────────────────────
+
+1. MovieCardViewModel.cs (100 lines)
+   Purpose:  Display movies in grid/list format (Home page, search results)
+   Fields:   Id, Title, PosterUrl, ReleaseDate, Description, IsActive
+   Source:   Movie entity
+   Used by:  Home/Index → List<MovieCardViewModel>
+
+2. MovieDetailViewModel.cs (90 lines)
+   Purpose:  Show full movie information with available showtimes
+   Fields:   Id, Title, Description, DurationMinutes, ReleaseDate, PosterUrl,
+             TrailerUrl, IsActive, List<ShowListItemViewModel> ShowTimes
+   Source:   Movie + Show entities
+   Used by:  Movies/Details/{id} → MovieDetailViewModel
+   Includes: Nested ShowListItemViewModel list
+
+3. ShowListItemViewModel.cs (85 lines)
+   Purpose:  Compact showtime display in lists and grids
+   Fields:   ShowId, StartDateTime, EndDateTime, ScreenName, TheatreName, City,
+             PriceRange, IsActive
+   Source:   Show + Screen + Theatre + SeatPrice entities
+   Used by:  MovieDetailViewModel.ShowTimes (nested)
+   Feature:  Pre-calculated price range (min–max)
+
+4. ShowDetailViewModel.cs (95 lines)
+   Purpose:  Show information page before seat selection
+   Fields:   ShowId, MovieTitle, PosterUrl, TheatreName, ScreenName, StartDateTime,
+             DurationMinutes, List<SeatCategoryPriceViewModel> Prices
+   Source:   Show + Movie + Screen + Theatre + SeatPrice entities
+   Used by:  Booking/ShowDetails/{id} → ShowDetailViewModel
+   Includes: Nested SeatCategoryPriceViewModel list
+
+5. SeatCategoryPriceViewModel.cs (40 lines)
+   Purpose:  Simple price tier information (Premium, Regular, Economy)
+   Fields:   Category, Price
+   Source:   SeatPrice entity
+   Used by:  ShowDetailViewModel.Prices, SeatSelectionViewModel.Prices (nested)
+   Feature:  Minimal model for reusable price display
+
+6. SeatSelectionViewModel.cs (145 lines) [CORE]
+   Purpose:  Main seat selection/booking page with interactive seat grid
+   Fields:   ShowId, MovieTitle, PosterUrl, TheatreName, ScreenName, StartDateTime,
+             DurationMinutes, List<SeatCategoryPriceViewModel> Prices,
+             List<string> BookedSeats, string LayoutJson, int Rows, int Columns
+   Source:   Show + Movie + Screen + Theatre + SeatPrice + BookedSeat entities
+   Used by:  Booking/SelectSeats/{showId} → SeatSelectionViewModel
+   Includes: Nested SeatCategoryPriceViewModel list
+   Features: • AJAX integration for seat selection
+             • Booked seats list for UI visualization
+             • Theatre layout JSON for grid rendering
+
+7. BookingConfirmationViewModel.cs (115 lines)
+   Purpose:  Display booking confirmation with ticket details
+   Fields:   BookingId, ConfirmationNumber, MovieTitle, TheatreName, ScreenName,
+             ShowTime, List<BookedSeatDetailViewModel> Seats, TotalAmount,
+             BookingDateTime, Status, Notes
+   Source:   Booking + Show + Movie + Screen + Theatre + BookedSeat entities
+   Used by:  Booking/Confirmation/{bookingId} → BookingConfirmationViewModel
+   Nested:   BookedSeatDetailViewModel (SeatNumber, Category, Price)
+   Feature:  Print-friendly confirmation display
+
+8. BookingHistoryItemViewModel.cs (90 lines)
+   Purpose:  User's past and upcoming bookings list
+   Fields:   BookingId, MovieTitle, ShowTime, TheatreName, SeatCount, TotalAmount,
+             Status, BookingDateTime, IsUpcoming
+   Source:   Booking + Show + Movie + Screen + Theatre + BookedSeat entities
+   Used by:  UserProfile/BookingHistory → List<BookingHistoryItemViewModel>
+   Feature:  IsUpcoming flag for filtering/sorting past vs future bookings
+
+════════════════════════════════════════════════════════════════════════════════
+
+DTOs FOR AJAX (2 files in ViewModels/DTOs/ folder):
+────────────────────────────────────────────────────────────────────────────────
+
+9. ReserveSeatsRequest.cs (75 lines)
+   Purpose:  Receive user's seat selections from AJAX POST
+   Fields:   int ShowId, List<string> SeatNumbers
+   Source:   Client-side AJAX JSON
+   Used by:  BookingController.ReserveSeats([FromBody] ReserveSeatsRequest)
+   Features: • [FromBody] JSON model binding
+             • Validation attributes ([Required], [MinLength])
+             • Example jQuery AJAX code included
+
+10. ReserveSeatsResponse.cs (140 lines)
+    Purpose:  Return booking result as JSON to AJAX caller
+    Fields:   bool Success, string Message, int? BookingId, string ErrorDetails
+    Source:   Server-side response
+    Used by:  BookingController.ReserveSeats() → return Json(response)
+    Features: • Success/error differentiation
+              • BookingId only on success (int? nullable)
+              • Detailed error information for debugging
+              • Server-side implementation example (50+ lines of code)
+
+════════════════════════════════════════════════════════════════════════════════
+
+DOCUMENTATION (2 files):
+────────────────────────────────────────────────────────────────────────────────
+
+11. PHASE4_VIEWMODELS_REFERENCE.txt (500+ lines)
+    • Folder structure overview
+    • ViewModel mapping reference table
+    • Detailed descriptions of each ViewModel
+    • Usage examples and mapping patterns
+    • AJAX integration flow explanation
+    • Include paths for data loading
+    • Strongly-typed Razor view examples
+    • Next phase (Phase 5) preview
+    • Integration checklist
+
+12. PHASE4_QUICK_REFERENCE.txt (300+ lines)
+    • What was created summary
+    • Immediate next steps
+    • Phase 5 preview
+    • Example: Updating HomeController with ViewModels
+    • Phase 5 actions preview (ShowDetails, SelectSeats, ReserveSeats, Confirmation)
+    • Key points for Phase 4
+    • Folder structure after Phase 4
+    • Compilation test instructions
+    • When to proceed to Phase 5 checklist
+
+13. PHASE4_HOMECONTROLLER_EXAMPLE.cs (250+ lines)
+    • Optional: Complete HomeControllerExample with Phase 4 integration
+    • Index() action using MovieCardViewModel
+    • GetMovieDetails() demonstrating MovieDetailViewModel
+    • SearchMovies() action with filtering
+    • Strongly-typed Razor view example in comments
+    • CSS styling for movie grid
+    • Error handling and logging patterns
+
+═══════════════════════════════════════════════════════════════════════════════
+FOLDER STRUCTURE AFTER PHASE 4
+═══════════════════════════════════════════════════════════════════════════════
+
+CategoryMvcApp/
+├── ViewModels/                          [NEW - PHASE 4]
+│   ├── MovieCardViewModel.cs
+│   ├── MovieDetailViewModel.cs
+│   ├── ShowListItemViewModel.cs
+│   ├── ShowDetailViewModel.cs
+│   ├── SeatCategoryPriceViewModel.cs
+│   ├── SeatSelectionViewModel.cs
+│   ├── BookingConfirmationViewModel.cs
+│   ├── BookingHistoryItemViewModel.cs
+│   └── DTOs/
+│       ├── ReserveSeatsRequest.cs
+│       └── ReserveSeatsResponse.cs
+├── Models/                              [PHASE 1]
+│   ├── ApplicationUser.cs
+│   ├── Movie.cs
+│   ├── Theatre.cs
+│   ├── Screen.cs
+│   ├── Show.cs
+│   ├── SeatPrice.cs
+│   ├── Booking.cs
+│   ├── BookedSeat.cs
+│   └── BookingStatus.cs
+├── Data/                                [PHASE 2]
+│   └── ApplicationDbContext.cs
+├── Controllers/                         [PHASE 3 Updated]
+│   ├── HomeController.cs                [Ready to update for Phase 4]
+│   └── (Add BookingController in Phase 5)
+├── Areas/                               [PHASE 3]
+│   ├── Admin/
+│   │   ├── Controllers/
+│   │   │   └── DashboardController.cs
+│   │   └── Views/
+│   │       ├── Dashboard/Index.cshtml
+│   │       └── Shared/_AdminLayout.cshtml
+│   └── Identity/Pages/Account/
+│       └── (Scaffolded identity pages)
+├── Views/
+│   ├── Home/
+│   │   ├── Index.cshtml                 [Ready to update for Phase 4]
+│   │   └── Privacy.cshtml
+│   ├── Movies/                          [NEW - for Movies controller]
+│   ├── Booking/                         [NEW - for Booking controller Phase 5]
+│   └── Shared/
+│       ├── _Layout.cshtml               [Updated Phase 3]
+│       ├── _LoginPartial.cshtml
+│       └── _Layout.cshtml.css
+├── wwwroot/
+├── Program.cs                           [PHASE 2 & 3]
+├── appsettings.json                     [PHASE 2]
+├── PHASE4_VIEWMODELS_REFERENCE.txt      [NEW - Phase 4 docs]
+├── PHASE4_QUICK_REFERENCE.txt           [NEW - Phase 4 docs]
+├── PHASE4_HOMECONTROLLER_EXAMPLE.cs     [NEW - Phase 4 example]
+└── (other project files)
+
+═══════════════════════════════════════════════════════════════════════════════
+KEY ARCHITECTURAL DECISIONS IN PHASE 4
+═══════════════════════════════════════════════════════════════════════════════
+
+1. SEPARATION OF CONCERNS
+   • Entity models (Models/) represent database structure
+   • ViewModels (ViewModels/) represent view data requirements
+   • Controllers orchestrate transformation between them
+   • Views receive only ViewModels (never raw entities)
+
+2. NESTED VIEWMODELS
+   • ShowListItemViewModel nested in MovieDetailViewModel
+   • SeatCategoryPriceViewModel nested in ShowDetailViewModel and SeatSelectionViewModel
+   • BookedSeatDetailViewModel nested in BookingConfirmationViewModel
+   → Enables complex data structures without deep nesting
+
+3. DTOs FOR AJAX
+   • ReserveSeatsRequest/Response separate from ViewModels
+   • Lightweight, focused on API contract
+   • JSON serialization/deserialization handled by [FromBody] binding
+   → Clean separation between UI pages and AJAX endpoints
+
+4. DATA ANNOTATIONS STRATEGY
+   • [Required] for non-nullable fields
+   • [StringLength(n)] for text constraints
+   • [DataType(...)] for formatting (Date, DateTime, Currency)
+   • [Display(Name = "...")] for user-friendly labels
+   • [Url], [Range], [RegularExpression] for format validation
+   → Enables both validation and UI generation
+
+5. DERIVED FIELDS
+   • PriceRange calculated from SeatPrice.Min/Max
+   • ConfirmationNumber formatted from BookingId
+   • IsUpcoming calculated from ShowTime vs DateTime.UtcNow
+   → ViewModels can include calculated values not in entities
+
+6. NULLABLE REFERENCE TYPES
+   • string? for optional text fields
+   • int? for BookingId in ReserveSeatsResponse (null on failure)
+   • List<T> initialized to empty (never null)
+   → Type safety + null safety throughout
+
+═══════════════════════════════════════════════════════════════════════════════
+VALIDATION & DATA ANNOTATIONS REFERENCE
+═══════════════════════════════════════════════════════════════════════════════
+
+Applied throughout all ViewModels:
+
+[Required]                          – Non-null validation
+[StringLength(n)]                   – Max string length
+[Range(min, max)]                   – Numeric range
+[Url]                               – URL format validation
+[DataType(DataType.Date)]           – Date-only fields
+[DataType(DataType.DateTime)]       – DateTime with time
+[DataType(DataType.Currency)]       – Decimal price fields
+[Display(Name = "...")]             – User-friendly labels
+[MinLength(n)]                      – Minimum collection/string size
+[RegularExpression(pattern)]        – Pattern validation (e.g., seat numbers)
+
+Integration points:
+✓ Model Binding               – Automatic deserialization from JSON/forms
+✓ Server-Side Validation      – Checked in [HttpPost] actions
+✓ Client-Side Validation      – Unobtrusive validation in views
+✓ View Rendering             – Labels, placeholders from [Display] attributes
+✓ Type Checking              – Compile-time verification in strongly-typed views
+
+═══════════════════════════════════════════════════════════════════════════════
+AJAX INTEGRATION FLOW (Phase 4 → Phase 5)
+═══════════════════════════════════════════════════════════════════════════════
+
+PHASE 4 (This Phase): ViewModels & DTOs designed
+PHASE 5 (Next Phase): Implementation of AJAX endpoints
+
+Flow Sequence:
+
+1. USER NAVIGATES TO BOOKING PAGE
+   ├─ BookingController.SelectSeats(showId) [HttpGet]
+   ├─ Loads Show + related data
+   ├─ Maps to SeatSelectionViewModel
+   └─ Returns View(viewModel)
+
+2. VIEW RENDERS SEAT GRID
+   ├─ Razor view displays @Model.MovieTitle, @Model.TheatreName, etc.
+   ├─ jQuery iterates @Model.BookedSeats and marks disabled
+   ├─ jQuery renders seat grid from @Model.Rows/@Model.Columns
+   └─ CSS styling makes seats clickable
+
+3. USER CLICKS SEATS
+   ├─ jQuery click handler adds/removes seat from selection array
+   ├─ Display running total price from @Model.Prices
+   └─ Enable "Reserve" button when ≥1 seat selected
+
+4. USER CLICKS "RESERVE SEATS"
+   ├─ jQuery collects selected seat numbers
+   ├─ Creates ReserveSeatsRequest { showId: X, seatNumbers: [...] }
+   ├─ $.ajax POST /Booking/ReserveSeats with JSON.stringify()
+   └─ Server receives via [FromBody] model binding
+
+5. SERVER PROCESSES BOOKING
+   ├─ BookingController.ReserveSeats([FromBody] ReserveSeatsRequest)
+   ├─ Validates show exists
+   ├─ Checks seats still available (race condition protection)
+   ├─ Creates Booking + BookedSeats in transaction
+   ├─ Returns Json(new ReserveSeatsResponse { Success = true, BookingId = X })
+   └─ On error: Returns Json(response { Success = false, Message = "...", ErrorDetails = "..." })
+
+6. CLIENT HANDLES RESPONSE
+   ├─ AJAX success callback receives ReserveSeatsResponse JSON
+   ├─ if (response.success) → Redirect to /Booking/Confirmation/{bookingId}
+   └─ else → Display error message and allow retry
+
+All DTOs and ViewModels defined in Phase 4 support this flow.
+
+═══════════════════════════════════════════════════════════════════════════════
+STRONGLY-TYPED VIEWS & INTELLISENSE
+═══════════════════════════════════════════════════════════════════════════════
+
+All ViewModels support strongly-typed Razor views with IntelliSense:
+
+@model List<MovieCardViewModel>
+<div class="movie-grid">
+    @foreach (var movie in Model)  /* IntelliSense: Model is List<MovieCardViewModel> */
+    {
+        <h2>@movie.Title</h2>       /* IntelliSense: movie.Title is string */
+        <img src="@movie.PosterUrl" />  /* IntelliSense: movie.PosterUrl is string */
+    }
+</div>
+
+Benefits:
+✓ Compile-time type checking (catch typos at build time)
+✓ IntelliSense in editor (autocomplete available)
+✓ Automatic HTML encoding for security (prevents XSS)
+✓ Display attributes respected (labels auto-generated)
+✓ Refactoring support (rename property updates all references)
+
+═══════════════════════════════════════════════════════════════════════════════
+NEXT PHASE: PHASE 5 – BOOKING CONTROLLER & BUSINESS LOGIC
+═══════════════════════════════════════════════════════════════════════════════
+
+Phase 5 will implement:
+
+Controllers/BookingController.cs
+├── [HttpGet] ShowDetails(int id)
+│   ├─ Load Show + related data
+│   ├─ Map to ShowDetailViewModel
+│   └─ Return View("ShowDetails", vm)
+├── [HttpGet] SelectSeats(int showId)
+│   ├─ Load Show + booked seats
+│   ├─ Map to SeatSelectionViewModel
+│   └─ Return View("SelectSeats", vm)
+├── [HttpPost] ReserveSeats([FromBody] ReserveSeatsRequest)
+│   ├─ Validate request
+│   ├─ Check seat availability
+│   ├─ Create Booking in transaction
+│   ├─ Return Json(ReserveSeatsResponse)
+│   └─ Handle errors
+└── [HttpGet] Confirmation(int bookingId)
+    ├─ Load Booking + related data
+    ├─ Map to BookingConfirmationViewModel
+    └─ Return View("Confirmation", vm)
+
+Views to create:
+✓ Views/Booking/ShowDetails.cshtml       – Show info before seat selection
+✓ Views/Booking/SelectSeats.cshtml       – Interactive seat grid (jQuery/AJAX)
+✓ Views/Booking/Confirmation.cshtml      – Booking confirmation
+✓ Views/Booking/_BookedSeatsList.cshtml  – Partial for seat list display
+
+JavaScript/jQuery:
+✓ Seat grid rendering from layout JSON
+✓ AJAX POST /Booking/ReserveSeats
+✓ Error/success feedback modals
+✓ Total price calculation
+
+═══════════════════════════════════════════════════════════════════════════════
+WHEN TO PROCEED TO PHASE 5
+═══════════════════════════════════════════════════════════════════════════════
+
+Phase 4 is COMPLETE and ready. Proceed to Phase 5 when you're ready to implement:
+
+✅ Checklist to proceed:
+  □ Review PHASE4_VIEWMODELS_REFERENCE.txt (understand mapping)
+  □ Review PHASE4_QUICK_REFERENCE.txt (quick start)
+  □ (Optional) Review PHASE4_HOMECONTROLLER_EXAMPLE.cs (integration example)
+  □ Understand entity-to-ViewModel mapping patterns
+  □ Understand AJAX request/response flow
+  □ Ready to create BookingController with 4 actions
+  □ Ready to create Booking views with jQuery/AJAX
+
+═══════════════════════════════════════════════════════════════════════════════
+PHASE 4 SUMMARY
+═══════════════════════════════════════════════════════════════════════════════
+
+What Phase 4 accomplished:
+✅ Created 8 ViewModels covering all major pages/features
+✅ Created 2 DTOs for AJAX integration
+✅ All classes include comprehensive documentation
+✅ All classes follow ASP.NET Core best practices
+✅ Strong separation between Entity models and View models
+✅ Proper data annotations for validation and display
+✅ Support for nested/complex data structures
+✅ Clear mapping patterns from entities to ViewModels
+✅ AJAX integration patterns defined and documented
+✅ 3 comprehensive documentation files provided
+✅ Example HomeController implementation provided
+✅ Ready for Phase 5 implementation
+
+What Phase 4 enables:
+→ Strongly-typed Razor views with IntelliSense
+→ Compile-time type safety across all pages
+→ Clean separation of concerns (Model ≠ View)
+→ Security (don't expose sensitive entity properties)
+→ Flexibility (derive calculated fields in ViewModels)
+→ AJAX integration for real-time seat selection
+→ Professional-grade MVC architecture
+
+═══════════════════════════════════════════════════════════════════════════════
+
+STATUS: ✅ PHASE 4 COMPLETE
+
+All ViewModels and DTOs created, documented, and ready for implementation.
+The system is now architected for Phase 5 (BookingController).
+
+Ready to proceed? Just say "Proceed to Phase 5" or ask any clarifying questions!
+
+═══════════════════════════════════════════════════════════════════════════════
